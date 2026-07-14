@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🏝️ 2026 삿포로 7일 완벽 여름휴가 인터랙티브 지도</title>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --text-light-gray: #94a3b8;
+            --border-color: #e2e8f0;
+            --card-bg: #ffffff;
+            --panel-bg: rgba(255, 255, 255, 0.96);
+            --accent-blue: #2563eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: var(--text-dark);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Map Full Background */
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Top Left Day Pill Tabs */
+        .tabs-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            max-width: calc(100% - 430px);
+        }
+
+        .tab-pill {
+            background: #ffffff;
+            color: #334155;
+            border: 1px solid var(--border-color);
+            padding: 9px 18px;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-pill:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+        }
+
+        .tab-pill.active {
+            background: var(--bg-dark);
+            color: #ffffff;
+            border-color: var(--bg-dark);
+            box-shadow: 0 6px 18px rgba(15,23,42,0.35);
+        }
+
+        /* Floating Right Schedule Panel (Claude Style) */
+        .panel-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            width: 395px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.16);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .panel-header {
+            padding: 24px 24px 18px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #ffffff;
+            flex-shrink: 0;
+        }
+
+        .day-badge {
+            font-size: 0.84rem;
+            font-weight: 700;
+            color: var(--text-gray);
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .day-title {
+            font-size: 1.38rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .day-subtitle {
+            font-size: 0.88rem;
+            color: var(--text-gray);
+            line-height: 1.4;
+            margin-bottom: 16px;
+        }
+
+        /* Route Open Button (`↗ 경로 열기`) */
+        .route-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg-dark);
+            color: #ffffff;
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-size: 0.88rem;
+            font-weight: 700;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .route-btn:hover {
+            background: #1e293b;
+            transform: scale(1.02);
+        }
+
+        .route-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Timeline List Area */
+        .timeline-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 18px 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .timeline-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .timeline-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 5px;
+        }
+
+        .section-header {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #475569;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            letter-spacing: -0.01em;
+        }
+
+        /* Location Card Item */
+        .card-item {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            gap: 14px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+        }
+
+        .card-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6rem;
+            flex-shrink: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+        }
+
+        .card-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-time {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-gray);
+            margin-bottom: 2px;
+        }
+
+        .card-title {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 0.82rem;
+            color: #475569;
+            line-height: 1.4;
+            word-break: keep-all;
+        }
+
+        .card-nav-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 8px;
+            padding: 5px 10px;
+            background: #eff6ff;
+            color: var(--accent-blue);
+            border-radius: 8px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            text-decoration: none;
+            width: fit-content;
+            transition: background 0.2s;
+        }
+
+        .card-nav-link:hover {
+            background: #dbeafe;
+        }
+
+        /* Custom Numbered Pins on Map */
+        .custom-marker {
+            width: 30px;
+            height: 30px;
+            background: var(--bg-dark);
+            color: #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.88rem;
+            border: 2.5px solid #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+            transition: transform 0.2s;
+        }
+
+        .custom-marker:hover {
+            transform: scale(1.15);
+            background: var(--accent-blue);
+        }
+
+        /* Mobile Bottom Sheet Layout */
+        @media (max-width: 900px) {
+            .tabs-overlay {
+                top: 12px;
+                left: 12px;
+                right: 12px;
+                max-width: 100%;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 4px;
+            }
+            .tab-pill {
+                padding: 7px 14px;
+                font-size: 0.82rem;
+                flex-shrink: 0;
+            }
+            .panel-overlay {
+                top: auto;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                height: 52vh;
+                border-radius: 24px 24px 0 0;
+                border: none;
+                border-top: 1px solid rgba(255,255,255,0.8);
+            }
+            .panel-header {
+                padding: 16px 20px 14px 20px;
+            }
+            .day-title {
+                font-size: 1.2rem;
+            }
+            .day-subtitle {
+                font-size: 0.82rem;
+                margin-bottom: 12px;
+            }
+            .timeline-list {
+                padding: 14px 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Full Screen Map -->
+    <div id="map"></div>
+
+    <!-- Floating Top-Left Day Pills -->
+    <div class="tabs-overlay" id="tabsContainer"></div>
+
+    <!-- Floating Right Schedule Panel -->
+    <div class="panel-overlay" id="panelOverlay">
+        <div class="panel-header" id="panelHeader"></div>
+        <div class="timeline-list" id="timelineList"></div>
+    </div>
+
+    <script>
+        // 7일 전체 일정 및 좌표 데이터
+        const itineraryData = {
+            "1": {
+                label: "1일차",
+                title: "1일차: 도착 & 비어가든",
+                subtitle: "도착 후 폐막일 축제 두 개, 전부 도보권",
+                routeUrl: "https://www.google.com/maps/dir/?api=1&origin=New+Chitose+Airport&destination=Susukino+Station+Sapporo&travelmode=transit",
+                items: [
+                    { time: "13:45", section: "Afternoon", icon: "🛫", name: "신치토세 공항 도착", rating: "4.3★ (17,919) · 이동", lat: 42.7863, lng: 141.6814, desc: "JR 쾌속 에어포트로 삿포로/스스키노 이동 (약 40분 소요)" },
+                    { time: "15:30", section: "Afternoon", icon: "🏨", name: "스스키노 체크인", rating: "4.1★ (637) · 숙소", lat: 43.0554, lng: 141.3533, desc: "짐 풀고 도보로 오도리 공원 출발" },
+                    { time: "17:00", section: "Evening", icon: "🍺", name: "오도리 비어가든 (폐막일)", rating: "4.5★ (3,210) · 맥주축제", lat: 43.0601, lng: 141.3496, desc: "5~8초메 4대 맥주사 구역. 오늘(8/18) 폐막일! 징기스칸 & 생맥주 (21:00 종료)" },
+                    { time: "20:30", section: "Evening", icon: "🏮", name: "다누키코지 마츠리 (폐막일)", rating: "4.4★ (1,840) · 야간축제", lat: 43.0567, lng: 141.3536, desc: "다누키코지 상점가 축제 오늘 마지막 날! 구경 후 스스키노 복귀" },
+                    { time: "22:00", section: "Night", icon: "🍨", name: "스스키노 시메파르페 바", rating: "4.6★ (920) · 디저트/바", lat: 43.0558, lng: 141.3528, desc: "삿포로 밤문화 정석 '술 마신 후 시메파르페(마감 파르페)'로 완벽 마무리" }
+                ]
+            },
+            "2": {
+                label: "2일차",
+                title: "2일차: 샤코탄 절경 & 오타루",
+                subtitle: "압도적 샤코탄 블루 절경 + 해질녘 오타루 운하 크루즈",
+                routeUrl: "https://www.google.com/maps/dir/43.0554,141.3533/43.3323,140.3475/43.1996,140.0068",
+                items: [
+                    { time: "10:30", section: "Morning", icon: "🌊", name: "샤코탄 가무이 미사키", rating: "4.7★ (4,510) · 절경/바다", lat: 43.3323, lng: 140.3475, desc: "여름에만 열리는 압도적 '샤코탄 블루' 절경. 점심 제철 생 우니동 필수!" },
+                    { time: "17:30", section: "Evening", icon: "🚤", name: "오타루 운하 크루즈", rating: "4.5★ (2,890) · 운하/감성", lat: 43.1996, lng: 140.0068, desc: "가스등 켜지는 해질녘 황금 시간대 탑승 (사전 예약 필수). 운하 야경 감상" },
+                    { time: "19:00", section: "Evening", icon: "🍣", name: "오타루 사카이마치 거리 & 스시", rating: "4.6★ (3,120) · 저녁/산책", lat: 43.1925, lng: 140.0069, desc: "크루즈 후 오타루 스시 혹은 카이센동 식사 후 JR로 삿포로 복귀" }
+                ]
+            },
+            "3": {
+                label: "3일차",
+                title: "3일차: 시내 힐링 & 야경 관람차",
+                subtitle: "체력 회복 산책 + 스스키노 옥상 대관람차 노리아",
+                routeUrl: "https://www.google.com/maps/dir/43.0544,141.3078/43.0687,141.3508/43.0564,141.3524",
+                items: [
+                    { time: "10:30", section: "Morning", icon: "🐿️", name: "홋카이도 신궁 & 마루야마 공원", rating: "4.6★ (8,120) · 힐링/산책", lat: 43.0544, lng: 141.3078, desc: "여유로운 오전 숲길 산책, 야생 다람쥐(에조리스) 찾기" },
+                    { time: "14:00", section: "Afternoon", icon: "🛍️", name: "삿포로역 & 다이마루 쇼핑", rating: "4.4★ (12,400) · 쇼핑/맛집", lat: 43.0687, lng: 141.3508, desc: "스프카레 점심 및 시내 백화점 쇼핑 (체력 회복 버퍼 데이)" },
+                    { time: "20:30", section: "Evening", icon: "🎡", name: "노르베사 옥상 대관람차 (노리아)", rating: "4.3★ (3,410) · 야경/액티비티", lat: 43.0564, lng: 141.3524, desc: "스스키노 야경을 한눈에 담는 옥상 관람차 탑승 (술 한잔 후 타면 낭만 2배)" },
+                    { time: "21:30", section: "Night", icon: "🛒", name: "돈키호테 다누키코지점", rating: "4.2★ (6,890) · 쇼핑", lat: 43.0570, lng: 141.3529, desc: "24시간 운영. 렌터카 이동 전 간식 및 필수 쇼핑 리스트 털기" }
+                ]
+            },
+            "4": {
+                label: "4일차",
+                title: "4일차: 렌터카 & 비에이 언덕",
+                subtitle: "광활한 패치워크의 길 + 신에이 언덕 황홀한 일몰",
+                routeUrl: "https://www.google.com/maps/dir/43.0554,141.3533/43.6092,142.4642/43.5577,142.4592",
+                items: [
+                    { time: "09:00", section: "Morning", icon: "🚗", name: "삿포로 시내 렌터카 픽업", rating: "4.5★ (410) · 렌터카", lat: 43.0585, lng: 141.3530, desc: "시내 수령! HEP(홋카이도 고속도로 패스) 필수 신청 후 비에이로 출발" },
+                    { time: "13:30", section: "Afternoon", icon: "🌳", name: "켄과 메리 나무 & 세븐스타 나무", rating: "4.4★ (2,100) · 언덕드라이브", lat: 43.6092, lng: 142.4642, desc: "패치워크의 길 드라이브, 광활한 비에이 언덕 풍경 감상" },
+                    { time: "17:00", section: "Evening", icon: "🌅", name: "신에이 언덕 전망공원 (노을 명소)", rating: "4.6★ (1,850) · 노을/전망", lat: 43.5577, lng: 142.4592, desc: "렌터카가 있어야만 갈 수 있는 비에이 최고의 노을 명소. 일몰 감상 후 후라노 이동" },
+                    { time: "19:00", section: "Night", icon: "🏡", name: "후라노/비에이 숙소 체크인", rating: "4.7★ (510) · 휴식", lat: 43.3450, lng: 142.3880, desc: "다음날 새벽 열기구 탑승을 위해 일찍 휴식" }
+                ]
+            },
+            "5": {
+                label: "5일차",
+                title: "5일차: 후라노 풀코스 & 청의 호수",
+                subtitle: "새벽 열기구 → 마르쉐/치즈공방 → 사계채의 언덕 → 청의 호수",
+                routeUrl: "https://www.google.com/maps/dir/43.3444,142.3611/43.3422,142.3871/43.3206,142.3771/43.5292,142.4651/43.4935,142.6142/43.4736,142.6391",
+                items: [
+                    { time: "05:30", section: "Morning", icon: "🎈", name: "후라노 열기구 계류 비행", rating: "4.8★ (980) · 핵심액티비티", lat: 43.3444, lng: 142.3611, desc: "안개 낀 후라노 분지 위를 오르는 환상적인 열기구 체험 (사전 예약 필수)" },
+                    { time: "10:30", section: "Morning", icon: "🍙", name: "후라노 마르쉐 (브런치)", rating: "4.3★ (3,410) · 맛집/식자재", lat: 43.3422, lng: 142.3871, desc: "열기구 후 휴식 후 마르쉐 방문. 명물 주먹밥 '니기리맘마' 및 로컬 식자재 구경" },
+                    { time: "12:30", section: "Afternoon", icon: "🧀", name: "후라노 치즈공방 (체험/시식)", rating: "4.2★ (2,150) · 체험/디저트", lat: 43.3206, lng: 142.3771, desc: "버터·치즈 만들기 체험 혹은 갓 만든 젤라또 & 갓 구운 피자 즐기기" },
+                    { time: "14:30", section: "Afternoon", icon: "🌈", name: "사계채의 언덕 (시키사이노오카)", rating: "4.6★ (9,800) · 꽃밭절경", lat: 43.5292, lng: 142.4651, desc: "8월 중하순 라벤더 끝물을 대신할 알록달록 무지개 꽃 융단 절경! 트랙터 버스 추천" },
+                    { time: "16:00", section: "Afternoon", icon: "🍈", name: "토미타 멜론 하우스", rating: "4.5★ (4,120) · 제철미식", lat: 43.4168, lng: 142.4281, desc: "8월 제철 홋카이도 컷멜론 & 과육 듬뿍 멜론 소프트아이스크림 섭취" },
+                    { time: "17:30", section: "Evening", icon: "💧", name: "아오이이케 (청의 호수)", rating: "4.4★ (14,200) · 신비로운호수", lat: 43.4935, lng: 142.6142, desc: "코발트블루 빛 신비로운 호수. 명물 파란 소프트아이스크림 & 파란 라무네 인증샷" },
+                    { time: "18:30", section: "Evening", icon: "♨️", name: "흰수염폭포 & 시로가네 온천", rating: "4.5★ (5,310) · 폭포/온천", lat: 43.4736, lng: 142.6391, desc: "청색 절벽으로 떨어지는 장관의 폭포 감상 후 시로가네 온천 료칸 숙박" }
+                ]
+            },
+            "6": {
+                label: "6일차",
+                title: "6일차: 시코쓰코 호수 & 호반 온천",
+                subtitle: "투명도 1위 시코쓰코 SUP + 마루코마 온천 료칸 힐링",
+                routeUrl: "https://www.google.com/maps/dir/43.5577,142.4592/42.7802,141.3104",
+                items: [
+                    { time: "14:00", section: "Afternoon", icon: "🏄", name: "시코쓰코 호수 SUP 체험", rating: "4.9★ (620) · 워터액티비티", lat: 42.7802, lng: 141.3104, desc: "일본 투명도 1위 크리스탈 블루 호수 위에서 패들보드 SUP 체험 (고프로 사진 제공)" },
+                    { time: "17:00", section: "Evening", icon: "♨️", name: "마루코마 온천 료칸", rating: "4.6★ (1,890) · 호수노천탕", lat: 42.7802, lng: 141.3104, desc: "호수와 물높이가 같은 천연 노천탕. 7일차 공항까지 단 30분 거리라 동선 리스크 완벽 차단!" }
+                ]
+            },
+            "7": {
+                label: "7일차",
+                title: "7일차: 공항 30분 컷 여유로운 출국",
+                subtitle: "렌터카 반납 + 초콜릿 월드/라멘도장 즐기고 여유로운 귀국",
+                routeUrl: "https://www.google.com/maps/dir/42.7802,141.3104/42.7930,141.6780/42.7865,141.6811",
+                items: [
+                    { time: "12:30", section: "Afternoon", icon: "🚘", name: "신치토세 공항 렌터카 반납", rating: "4.5★ (890) · 렌터카반납", lat: 42.7930, lng: 141.6780, desc: "공항 인근 지점 반납 (셔틀버스로 공항 터미널 5분 이동)" },
+                    { time: "13:30", section: "Afternoon", icon: "🍫", name: "로이스 초콜릿 월드 & 라멘도장", rating: "4.6★ (3,210) · 공항테마파크", lat: 42.7865, lng: 141.6811, desc: "공항 3층 초콜릿 공장 견학, 마지막 명물 홋카이도 라멘 도장 점심" },
+                    { time: "15:05", section: "Afternoon", icon: "🛫", name: "신치토세 공항 출국", rating: "4.4★ (17,919) · 출국", lat: 42.7863, lng: 141.6814, desc: "여유롭게 출국 수속 및 귀국편 탑승" }
+                ]
+            }
+        };
+
+        // 지도 초기화 (구글 지도 타일 적용)
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: true
+        }).setView([43.0601, 141.3496], 11);
+
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        // 구글 지도 도로망 라스터 타일 (100% 구글맵 외형)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            attribution: '지도 데이터 ©2026 Google'
+        }).addTo(map);
+
+        let currentMarkers = [];
+        let currentPolyline = null;
+        let activeTabKey = "1";
+
+        const tabsContainer = document.getElementById("tabsContainer");
+        const panelHeader = document.getElementById("panelHeader");
+        const timelineList = document.getElementById("timelineList");
+
+        // 탭 생성
+        function createTabs() {
+            for (let day = 1; day <= 7; day++) {
+                const btn = document.createElement("button");
+                btn.className = `tab-pill ${day === 1 ? 'active' : ''}`;
+                btn.id = `tab_${day}`;
+                btn.innerText = `${day}일차`;
+                btn.onclick = () => selectDay(day.toString());
+                tabsContainer.appendChild(btn);
+            }
+        }
+
+        // 탭 선택
+        function selectDay(dayKey) {
+            activeTabKey = dayKey;
+
+            // 탭 스타일 변경
+            document.querySelectorAll(".tab-pill").forEach(b => b.classList.remove("active"));
+            const targetBtn = document.getElementById(`tab_${dayKey}`);
+            if (targetBtn) targetBtn.classList.add("active");
+
+            // 마커/라인 초기화
+            currentMarkers.forEach(m => map.removeLayer(m));
+            currentMarkers = [];
+            if (currentPolyline) map.removeLayer(currentPolyline);
+
+            const data = itineraryData[dayKey];
+
+            // 우측 패널 헤더 렌더링
+            panelHeader.innerHTML = `
+                <span class="day-badge">${data.label}</span>
+                <h2 class="day-title">${data.title}</h2>
+                <p class="day-subtitle">${data.subtitle}</p>
+                <a href="${data.routeUrl}" target="_blank" class="route-btn">
+                    <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                    경로 열기
+                </a>
+            `;
+
+            // 우측 타임라인 리스트 렌더링
+            timelineList.innerHTML = "";
+            let currentSection = "";
+            const coordsList = [];
+
+            data.items.forEach((item, idx) => {
+                coordsList.push([item.lat, item.lng]);
+
+                // 섹션 헤더 (Afternoon, Evening 등)
+                if (item.section && item.section !== currentSection) {
+                    currentSection = item.section;
+                    const secEl = document.createElement("div");
+                    secEl.className = "section-header";
+                    secEl.innerText = currentSection;
+                    timelineList.appendChild(secEl);
+                }
+
+                // 카드 생성
+                const card = document.createElement("div");
+                card.className = "card-item";
+                card.onclick = () => {
+                    map.flyTo([item.lat, item.lng], 15, { duration: 0.6 });
+                    currentMarkers[idx]?.openPopup();
+                };
+
+                const gmapSearchUrl = `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
+
+                card.innerHTML = `
+                    <div class="card-icon">${item.icon}</div>
+                    <div class="card-content">
+                        <span class="card-time">${item.time}</span>
+                        <div class="card-title">${item.name}</div>
+                        <div class="card-meta">${item.rating}</div>
+                        <div class="card-desc">${item.desc}</div>
+                        <a href="${gmapSearchUrl}" target="_blank" class="card-nav-link" onclick="event.stopPropagation();">
+                            📍 구글맵 내비 열기
+                        </a>
+                    </div>
+                `;
+                timelineList.appendChild(card);
+
+                // 지도 위에 번호 마커 생성 (`1`, `2`, `3`)
+                const iconHtml = `<div class="custom-marker">${idx + 1}</div>`;
+                const customIcon = L.divIcon({
+                    className: 'custom-pin-wrapper',
+                    html: iconHtml,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
+                marker.bindPopup(`
+                    <div style="font-family:'Pretendard',sans-serif; padding:4px; min-width:180px;">
+                        <strong style="color:#0f172a; font-size:0.95rem;">[${idx+1}] ${item.name}</strong><br>
+                        <span style="color:#64748b; font-size:0.8rem;">${item.time} · ${item.desc}</span><br>
+                        <a href="${gmapSearchUrl}" target="_blank" style="display:inline-block; margin-top:8px; background:#2563eb; color:#fff; padding:6px 12px; border-radius:6px; font-weight:700; font-size:0.75rem; text-decoration:none;">
+                            🧭 구글맵 내비 열기
+                        </a>
+                    </div>
+                `);
+
+                marker.on('click', () => {
+                    map.flyTo([item.lat, item.lng], 15, { duration: 0.6 });
+                });
+
+                currentMarkers.push(marker);
+            });
+
+            // 경로선 (Polyline)
+            if (coordsList.length > 1) {
+                currentPolyline = L.polyline(coordsList, {
+                    color: '#2563eb',
+                    weight: 5.5,
+                    opacity: 0.85,
+                    lineCap: 'round',
+                    lineJoin: 'round'
+                }).addTo(map);
+            }
+
+            // 지도 영역 맞춤
+            if (coordsList.length > 0) {
+                map.flyToBounds(coordsList, { padding: [80, 80], duration: 0.8, maxZoom: 14 });
+            }
+        }
+
+        // 초기 실행
+        createTabs();
+        selectDay("1");
+    </script>
+</body>
+</html>
