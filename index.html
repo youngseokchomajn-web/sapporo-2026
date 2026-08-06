@@ -1,1119 +1,1049 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🏝️ 2026 삿포로 6박 7일 완벽 여름휴가 인터랙티브 지도</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --text-dark: #0f172a;
-            --text-gray: #64748b;
-            --text-light-gray: #94a3b8;
-            --border-color: #e2e8f0;
-            --card-bg: #ffffff;
-            --panel-bg: rgba(255, 255, 255, 0.96);
-            --accent-blue: #2563eb;
-            --accent-hover: #1d4ed8;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        body {
-            background-color: #f8fafc;
-            color: var(--text-dark);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* 풀 스크린 지도 */
-        #map {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        /* 좌측 상단 컨트롤 오버레이 */
-        .left-controls-overlay {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-width: calc(100% - 430px);
-        }
-
-        .tabs-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .tab-pill {
-            background: #ffffff;
-            color: #334155;
-            border: 1px solid var(--border-color);
-            padding: 9px 18px;
-            border-radius: 999px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .tab-pill:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-        }
-
-        .tab-pill.active {
-            background: var(--bg-dark);
-            color: #ffffff;
-            border-color: var(--bg-dark);
-            box-shadow: 0 6px 18px rgba(15,23,42,0.35);
-        }
-
-        /* 실시간 날씨 바 오버레이 */
-        .weather-bar-overlay {
-            background: rgba(255, 255, 255, 0.94);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 10px 14px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            max-width: 100%;
-            scrollbar-width: none;
-        }
-        .weather-bar-overlay::-webkit-scrollbar { display: none; }
-
-        .weather-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 8px 12px;
-            min-width: 78px;
-            text-align: center;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            flex-shrink: 0;
-        }
-        .weather-card:hover, .weather-card.active {
-            background: #eff6ff;
-            border-color: var(--accent-blue);
-            transform: translateY(-1px);
-        }
-        .weather-card .wd { font-weight: 700; color: #1e293b; margin-bottom: 2px; }
-        .weather-card .wi { font-size: 1.2rem; margin: 2px 0; }
-        .weather-card .wt { font-weight: 800; color: #0f172a; }
-        .weather-card .wt .lo { font-weight: 500; color: #64748b; }
-        .weather-card .wp { color: #2563eb; font-weight: 700; font-size: 0.7rem; margin-top: 2px; }
-
-        /* 2시간 간격 날씨 상세 팝업 */
-        .hourly-panel {
-            display: none;
-            background: #1e293b;
-            color: #fff;
-            padding: 10px 14px;
-            border-radius: 12px;
-            gap: 12px;
-            overflow-x: auto;
-            margin-top: 4px;
-            font-size: 0.75rem;
-        }
-        .hourly-panel.open { display: flex; }
-        .hourly-chip { text-align: center; min-width: 48px; }
-        .hourly-chip .hh { color: #94a3b8; font-size: 0.7rem; }
-        .hourly-chip .hi { font-size: 1.1rem; margin: 2px 0; }
-        .hourly-chip .ht { font-weight: 700; }
-        .hourly-chip .hp { color: #60a5fa; font-size: 0.68rem; }
-
-        /* 우측 플로팅 일정 타임라인 패널 (Claude/App Style) */
-        .panel-overlay {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            bottom: 20px;
-            width: 395px;
-            background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            border-radius: 24px;
-            z-index: 1000;
-            box-shadow: 0 20px 40px -15px rgba(0,0,0,0.12);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .panel-header {
-            padding: 24px 24px 16px 24px;
-            border-bottom: 1px solid var(--border-color);
-            background: #ffffff;
-        }
-        .day-badge {
-            display: inline-block;
-            background: #dbeafe;
-            color: var(--accent-blue);
-            font-weight: 800;
-            font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-        }
-        .day-title {
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            line-height: 1.3;
-            margin-bottom: 6px;
-        }
-        .day-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-gray);
-            line-height: 1.4;
-            margin-bottom: 14px;
-        }
-        .route-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #f1f5f9;
-            color: #334155;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .route-btn:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-        .route-btn svg { width: 14px; height: 14px; fill: currentColor; }
-
-        .timeline-scroll {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px 20px 24px 20px;
-            scroll-behavior: smooth;
-        }
-
-        .section-header {
-            font-size: 0.75rem;
-            font-weight: 800;
-            color: var(--text-light-gray);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 16px 0 10px 4px;
-        }
-        .section-header:first-child { margin-top: 4px; }
-
-        /* 선택 참고 팁 노티 (pickNote) */
-        .pick-note {
-            background: #fffbeb;
-            border-left: 4px solid #f59e0b;
-            color: #92400e;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 0.82rem;
-            line-height: 1.45;
-            margin-bottom: 12px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-        }
-
-        /* 타임라인 카드 스타일 */
-        .card-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            display: flex;
-            gap: 14px;
-            position: relative;
-        }
-        .card-item:hover {
-            border-color: #cbd5e1;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px -6px rgba(0,0,0,0.08);
-        }
-        .card-item.card-flash {
-            animation: cardHighlight 1.4s ease;
-        }
-        @keyframes cardHighlight {
-            0% { background: #eff6ff; border-color: #2563eb; }
-            100% { background: #ffffff; border-color: var(--border-color); }
-        }
-
-        .card-icon {
-            font-size: 1.6rem;
-            width: 44px;
-            height: 44px;
-            background: #f8fafc;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .card-content { flex: 1; min-width: 0; }
-        .card-time {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: var(--accent-blue);
-            margin-bottom: 2px;
-            display: inline-block;
-        }
-        .card-title {
-            font-size: 0.98rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-            line-height: 1.3;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .pin-badge {
-            background: #2563eb;
-            color: #fff;
-            font-size: 0.7rem;
-            font-weight: 800;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .card-meta {
-            font-size: 0.78rem;
-            font-weight: 600;
-            color: #d97706;
-            margin-bottom: 6px;
-        }
-        .card-desc {
-            font-size: 0.83rem;
-            color: var(--text-gray);
-            line-height: 1.45;
-            margin-bottom: 10px;
-        }
-
-        .card-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .card-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.15s ease;
-        }
-        .btn-nav { background: #eff6ff; color: #2563eb; }
-        .btn-nav:hover { background: #dbeafe; }
-        .btn-tel { background: #f0fdf4; color: #16a34a; }
-        .btn-tel:hover { background: #dcfce7; }
-
-        /* 번호 마커 핀 */
-        .custom-pin-wrapper .num-pin {
-            background: #2563eb;
-            color: #ffffff;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            font-size: 0.85rem;
-            box-shadow: 0 4px 10px rgba(37,99,235,0.4);
-            border: 2px solid #ffffff;
-        }
-
-        /* 모바일 대응 반응형 */
-        @media (max-width: 768px) {
-            .left-controls-overlay {
-                top: 12px;
-                left: 12px;
-                right: 12px;
-                max-width: 100%;
-            }
-            .panel-overlay {
-                top: auto;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                width: 100%;
-                height: 48vh;
-                border-radius: 20px 20px 0 0;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍜 2026 삿포로 6박 7일 여행</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  :root{
+    --bg:#0f1420;
+    --panel:#171d2b;
+    --panel2:#1e2536;
+    --accent:#5eb1ff;
+    --accent2:#ffb454;
+    --text:#e7ecf5;
+    --sub:#9aa5ba;
+    --border:#2a3247;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,Roboto,"Noto Sans KR",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    padding:20px 24px 14px;
+    border-bottom:1px solid var(--border);
+    background:linear-gradient(180deg,#141a29,#0f1420);
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size:1.4rem;
+  }
+  header p{
+    margin:0;
+    color:var(--sub);
+    font-size:0.9rem;
+  }
+  .logibar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    padding:14px 24px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+  }
+  .logi-chip{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:8px 12px;
+    font-size:0.82rem;
+    color:var(--sub);
+  }
+  .logi-chip{font-size:0.92rem;}
+  .logi-chip b{color:var(--text);font-weight:600;}
+  .prep{
+    max-width:760px;
+    margin:0 auto 18px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 18px;
+  }
+  .prep h3{
+    margin:0 0 10px;
+    font-size:1.05rem;
+    color:var(--accent2);
+  }
+  .prep ul{margin:0;padding-left:18px;}
+  .prep li{
+    color:var(--sub);
+    font-size:0.97rem;
+    line-height:1.75;
+  }
+  .prep li b{color:var(--text);}
+  .pick-note{
+    background:rgba(255,180,84,0.1);
+    border:1px solid var(--accent2);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:0.95rem;
+    color:var(--accent2);
+    font-weight:600;
+    margin:10px 0;
+  }
+  .weather-bar{
+    display:flex;
+    gap:10px;
+    padding:0 24px 14px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  .weather-card{
+    flex:0 0 auto;
+    min-width:92px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:8px 12px;
+    text-align:center;
+  }
+  .weather-card .wd{font-size:0.75rem;color:var(--sub);margin-bottom:2px;}
+  .weather-card .wi{font-size:1.4rem;line-height:1.2;}
+  .weather-card .wt{font-size:0.8rem;color:var(--text);margin-top:2px;}
+  .weather-card .wt .lo{color:var(--sub);}
+  .weather-card .wp{font-size:0.7rem;color:var(--accent);margin-top:1px;}
+  .weather-card{cursor:pointer;transition:border-color 0.2s, background 0.2s;}
+  .weather-card:hover{border-color:var(--accent);}
+  .weather-card.active{border-color:var(--accent);background:rgba(94,177,255,0.12);}
+  .hourly-panel{
+    display:none;
+    gap:8px;
+    padding:10px 24px 14px;
+    background:var(--panel);
+    border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  .hourly-panel.open{display:flex;}
+  .hourly-chip{
+    flex:0 0 auto;
+    min-width:56px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:6px 8px;
+    text-align:center;
+  }
+  .hourly-chip .hh{font-size:0.7rem;color:var(--sub);}
+  .hourly-chip .hi{font-size:1.1rem;line-height:1.3;}
+  .hourly-chip .ht{font-size:0.75rem;color:var(--text);}
+  .hourly-chip .hp{font-size:0.65rem;color:var(--accent);}
+  #map{
+    height:340px;
+    width:100%;
+  }
+  .tabs{
+    display:flex;
+    gap:8px;
+    padding:14px 24px 0;
+    background:var(--bg);
+    overflow-x:auto;
+  }
+  .tab{
+    flex:0 0 auto;
+    padding:10px 18px;
+    border-radius:10px 10px 0 0;
+    background:var(--panel);
+    color:var(--sub);
+    cursor:pointer;
+    font-weight:600;
+    font-size:0.9rem;
+    border:1px solid var(--border);
+    border-bottom:none;
+  }
+  .tab.active{
+    background:var(--panel2);
+    color:var(--accent);
+  }
+  main{
+    max-width:760px;
+    margin:0 auto;
+    padding:18px 24px 60px;
+  }
+  .day-header{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .day-header h2{
+    margin:0 0 6px;
+    font-size:1.15rem;
+  }
+  .day-header .summary{
+    color:var(--sub);
+    font-size:0.88rem;
+    line-height:1.5;
+  }
+  .route-link{
+    display:inline-block;
+    margin-top:10px;
+    font-size:0.82rem;
+    color:var(--accent);
+    text-decoration:none;
+    border:1px solid var(--accent);
+    border-radius:8px;
+    padding:5px 10px;
+  }
+  .route-link:hover{background:rgba(94,177,255,0.1);}
+  .period-label{
+    color:var(--accent2);
+    font-size:0.78rem;
+    font-weight:700;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    margin:22px 0 10px;
+  }
+  .card{
+    display:flex;
+    gap:14px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:10px;
+    scroll-margin-top:16px;
+    transition:background 0.3s, border-color 0.3s;
+  }
+  .card.card-flash{
+    background:rgba(94,177,255,0.14);
+    border-color:var(--accent);
+  }
+  .pin-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:18px;height:18px;
+    border-radius:50%;
+    background:var(--accent);
+    color:#0b1020;
+    font-size:0.68rem;
+    font-weight:800;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .card .time{
+    flex:0 0 56px;
+    font-weight:700;
+    color:var(--accent);
+    font-size:0.95rem;
+    padding-top:2px;
+  }
+  .card .icon{
+    flex:0 0 28px;
+    font-size:1.4rem;
+    text-align:center;
+  }
+  .card .body{flex:1;min-width:0;}
+  .card .title{
+    font-weight:700;
+    font-size:1.08rem;
+    margin-bottom:3px;
+  }
+  .card .meta{
+    color:var(--accent2);
+    font-size:0.92rem;
+    margin-bottom:5px;
+  }
+  .card .desc{
+    color:var(--sub);
+    font-size:1rem;
+    line-height:1.6;
+  }
+  .card .links{margin-top:10px;display:flex;gap:14px;flex-wrap:wrap;}
+  .card a.maplink, .card a.tellink{
+    font-size:0.95rem;
+    color:var(--accent);
+    text-decoration:none;
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:6px 12px;
+  }
+  .card a.maplink:hover, .card a.tellink:hover{background:rgba(94,177,255,0.12);}
+  .note{
+    background:var(--panel2);
+    border:1px dashed var(--border);
+    border-radius:10px;
+    padding:10px 12px;
+    font-size:0.78rem;
+    color:var(--sub);
+    margin-top:4px;
+  }
+  .num-pin{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:26px;height:26px;
+    border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg);
+    background:var(--accent);
+    border:2px solid #fff;
+    box-shadow:0 2px 6px rgba(0,0,0,0.45);
+  }
+  .num-pin span{
+    transform:rotate(45deg);
+    color:#0b1020;
+    font-weight:800;
+    font-size:0.78rem;
+    font-family:inherit;
+  }
+  footer{
+    text-align:center;
+    color:var(--sub);
+    font-size:0.8rem;
+    padding:20px;
+  }
+  @media (max-width:520px){
+    header, .logibar, .tabs, main{padding-left:14px;padding-right:14px;}
+    .prep{margin-left:14px;margin-right:14px;}
+    #map{height:260px;}
+    .card{padding:14px;gap:10px;}
+    .card .time{flex:0 0 48px;font-size:0.92rem;}
+    .card .icon{flex:0 0 24px;font-size:1.25rem;}
+    .card .title{font-size:1.05rem;}
+    .card .desc{font-size:1rem;}
+    .card .links{gap:8px;}
+    .card a.maplink, .card a.tellink{font-size:0.92rem;padding:7px 10px;}
+  }
+</style>
 </head>
 <body>
 
-    <!-- 지도 영역 -->
-    <div id="map"></div>
+<header>
+  <h1>🍜 2026 삿포로 가족여행</h1>
+  <p>2026.07.27(월) – 07.30(목) · 부모님 · 누나 · 나</p>
+</header>
 
-    <!-- 좌측 상단 탭 및 실시간 날씨 바 오버레이 -->
-    <div class="left-controls-overlay">
-        <div class="tabs-container" id="tabsContainer"></div>
-        <div class="weather-bar-overlay" id="weatherBar"></div>
-        <div class="hourly-panel" id="hourlyPanel"></div>
-    </div>
+<div class="weather-bar" id="weatherBar">
+  <div class="weather-card"><div class="wd">날씨 불러오는 중…</div></div>
+</div>
+<div class="hourly-panel" id="hourlyPanel"></div>
 
-    <!-- 우측 디테일 타임라인 플로팅 패널 -->
-    <div class="panel-overlay">
-        <div class="panel-header" id="panelHeader"></div>
-        <div class="timeline-scroll" id="timelineList"></div>
-    </div>
+<div id="map"></div>
 
-    <script>
-        const itineraryData = {
-        "1": {
-                "label": "1일차",
-                "title": "1일차: 도착 & 삿포로 축제",
-                "subtitle": "13:45 도착 → 비어가든·다누키코지 축제 폐막일 직행",
-                "routeUrl": "https://www.google.com/maps/dir/?api=1&origin=New+Chitose+Airport&destination=Susukino+Station+Sapporo&travelmode=transit",
-                "items": [
-                        {
-                                "time": "13:45",
-                                "section": "Afternoon",
-                                "icon": "🛫",
-                                "name": "신치토세 공항 도착",
-                                "rating": "이동",
-                                "lat": 42.7863,
-                                "lng": 141.6814,
-                                "desc": "JR 쾌속 에어포트로 삿포로/스스키노 이동 (약 40분 소요)",
-                                "tel": "0123-23-0111"
-                        },
-                        {
-                                "time": "15:30",
-                                "section": "Afternoon",
-                                "icon": "🏨",
-                                "name": "스스키노 숙소 체크인",
-                                "rating": "숙소",
-                                "lat": 43.0554,
-                                "lng": 141.3533,
-                                "desc": "짐 풀고 도보로 오도리 공원 출발"
-                        },
-                        {
-                                "time": "17:00",
-                                "section": "Evening",
-                                "icon": "🍺",
-                                "name": "오도리 비어가든 (★폐막일★)",
-                                "rating": "4.5★ · 맥주축제 ~21:00",
-                                "lat": 43.0601,
-                                "lng": 141.3496,
-                                "desc": "5~8초메 4대 맥주사 구역. 오늘(8/18) 마지막 폐막일! 징기스칸 & 생맥주",
-                                "tel": "011-281-6400",
-                                "pickNote": "🍻 <b>오늘(8/18)이 비어가든 축제 마지막 폐막일입니다!</b> 21:00 마감 전까지 야외 생맥주를 즐기세요."
-                        },
-                        {
-                                "time": "21:00",
-                                "section": "Evening",
-                                "icon": "🏮",
-                                "name": "다누키코지 마츠리 (★폐막일★)",
-                                "rating": "4.4★ · 야간축제",
-                                "lat": 43.0567,
-                                "lng": 141.3536,
-                                "desc": "다누키코지 상점가 축제 오늘이 마지막 날! 야시장 구경",
-                                "pickNote": "🏮 <b>다누키코지 축제 마지막 날</b> — 아케이드 야시장 볼거리 놓치지 마세요!"
-                        },
-                        {
-                                "time": "22:30",
-                                "section": "Night",
-                                "icon": "🍨",
-                                "name": "시메파르페 바",
-                                "rating": "4.6★ · 디저트",
-                                "lat": 43.0558,
-                                "lng": 141.3528,
-                                "desc": "삿포로 정석 술 마신 후 시메파르페로 첫날 마무리"
-                        }
-                ],
-                "date": "8/18(화)",
-                "isoDate": "2026-08-18"
-        },
-        "2": {
-                "label": "2일차",
-                "title": "2일차: 시코쓰호 & 조잔케이 온천",
-                "subtitle": "렌터카 픽업 → 투명도 1위 호수 SUP/페달보트 → 조잔케이 온천 료칸",
-                "routeUrl": "https://www.google.com/maps/dir/43.0585,141.3530/42.7628,141.4128/42.9774,141.1718",
-                "items": [
-                        {
-                                "time": "09:00",
-                                "section": "Morning",
-                                "icon": "🚗",
-                                "name": "삿포로 렌터카 픽업",
-                                "rating": "렌터카",
-                                "lat": 43.0585,
-                                "lng": 141.353,
-                                "desc": "차량 수령 후 남쪽 시코쓰 호수로 드라이브 출발"
-                        },
-                        {
-                                "time": "11:30",
-                                "section": "Morning",
-                                "icon": "🍜",
-                                "name": "시코쓰호 점심",
-                                "rating": "4.2★ · 식당가",
-                                "lat": 42.7635,
-                                "lng": 141.4119,
-                                "desc": "호숫가 온천 마을 식당에서 점심식사"
-                        },
-                        {
-                                "time": "13:30",
-                                "section": "Afternoon",
-                                "icon": "🏄",
-                                "name": "시코쓰호 SUP / 페달보트",
-                                "rating": "4.9★ · 액티비티",
-                                "lat": 42.7628,
-                                "lng": 141.4128,
-                                "desc": "초투명 크리스탈 블루 호수 위에서 물놀이",
-                                "tel": "0123-25-2404"
-                        },
-                        {
-                                "time": "17:30",
-                                "section": "Evening",
-                                "icon": "♨️",
-                                "name": "조잔케이 온천 료칸 체크인",
-                                "rating": "4.6★ · 온천료칸",
-                                "lat": 42.9774,
-                                "lng": 141.1718,
-                                "desc": "계곡 온천마을 이동(1시간 15분). 물놀이 피로를 녹이는 노천 온천 & 가이세키 저녁",
-                                "tel": "011-598-2311"
-                        }
-                ],
-                "date": "8/19(수)",
-                "isoDate": "2026-08-19"
-        },
-        "3": {
-                "label": "3일차",
-                "title": "3일차: 샤코탄 절경 & 요이치 에어비앤비",
-                "subtitle": "샤코탄 블루 + 시마무이 해안 → 우니동 → 오타루 운하 → 요이치 에어비앤비 숙박",
-                "routeUrl": "https://www.google.com/maps/dir/42.9774,141.1718/43.3323,140.3475/43.3101,140.4455/43.2950,140.4020/43.1996,140.0068/43.1869,140.7892",
-                "items": [
-                        {
-                                "time": "09:00",
-                                "section": "Morning",
-                                "icon": "🚗",
-                                "name": "조잔케이 출발 → 샤코탄",
-                                "rating": "1시간 30분 소요",
-                                "lat": 42.9774,
-                                "lng": 141.1718,
-                                "desc": "서쪽 샤코탄 반도로 드라이브"
-                        },
-                        {
-                                "time": "11:00",
-                                "section": "Morning",
-                                "icon": "🌊",
-                                "name": "샤코탄 가무이 미사키",
-                                "rating": "4.7★ · 절경/바다",
-                                "lat": 43.3323,
-                                "lng": 140.3475,
-                                "desc": "영롱한 샤코탄 블루 바다를 내려다보는 곶 산책"
-                        },
-                        {
-                                "time": "12:00",
-                                "section": "Afternoon",
-                                "icon": "🏖️",
-                                "name": "시마무이 해안 (에메랄드 비치)",
-                                "rating": "4.8★ · 비밀해변",
-                                "lat": 43.3101,
-                                "lng": 140.4455,
-                                "desc": "차로 5분 거리. 일본 최고 투명도의 에메랄드 빛 비밀 해안가"
-                        },
-                        {
-                                "time": "13:30",
-                                "section": "Afternoon",
-                                "icon": "🍱",
-                                "name": "샤코탄 생 우니동 점심",
-                                "rating": "4.6★ · 미식",
-                                "lat": 43.295,
-                                "lng": 140.402,
-                                "desc": "8월 제철 피크! 신선한 성게알(우니) 덮밥",
-                                "tel": "0135-44-2900"
-                        },
-                        {
-                                "time": "16:00",
-                                "section": "Evening",
-                                "icon": "🚤",
-                                "name": "오타루 운하 크루즈",
-                                "rating": "4.5★ · 운하",
-                                "lat": 43.1996,
-                                "lng": 140.0068,
-                                "desc": "가스등이 켜지는 황혼 시간대 낭만 크루즈 탑승",
-                                "tel": "0134-31-1733"
-                        },
-                        {
-                                "time": "18:30",
-                                "section": "Evening",
-                                "icon": "🏡",
-                                "name": "요이치 에어비앤비 체크인",
-                                "rating": "에어비앤비 (바다 전경 주택)",
-                                "lat": 43.1869,
-                                "lng": 140.7892,
-                                "desc": "바다가 내려다보이는 요이치 독채 에어비앤비 체크인 및 휴식"
-                        }
-                ],
-                "date": "8/20(목)",
-                "isoDate": "2026-08-20"
-        },
-        "4": {
-                "label": "4일차",
-                "title": "4일차: 요이치·텐구야마 → 비에이 → 후라노",
-                "subtitle": "위스키 양조장 → 텐구야마 로프웨이 → 비에이 노을 → 후라노 에어비앤비 (금요일)",
-                "routeUrl": "https://www.google.com/maps/dir/43.1925,140.0069/43.1869,140.7892/43.1788,139.9798/43.5577,142.4592/43.3450,142.3880",
-                "items": [
-                        {
-                                "time": "09:30",
-                                "section": "Morning",
-                                "icon": "🥃",
-                                "name": "요이치 니카 위스키 증류소",
-                                "rating": "4.5★ · 양조장",
-                                "lat": 43.1869,
-                                "lng": 140.7892,
-                                "desc": "붉은 지붕의 아름다운 증류소 견학 및 싱글몰트 위스키 무료 시음",
-                                "tel": "0135-23-3131"
-                        },
-                        {
-                                "time": "12:30",
-                                "section": "Afternoon",
-                                "icon": "🗼",
-                                "name": "텐구야마 로프웨이",
-                                "rating": "4.5★ · 전망대",
-                                "lat": 43.1788,
-                                "lng": 139.9798,
-                                "desc": "오타루 항구 & 시내 파노라마 전망. 정상 카페에서 점심도 가능",
-                                "tel": "0134-33-7381"
-                        },
-                        {
-                                "time": "15:00",
-                                "section": "Afternoon",
-                                "icon": "🌅",
-                                "name": "비에이 신에이 언덕 (노을)",
-                                "rating": "4.6★ · 일몰명소",
-                                "lat": 43.5577,
-                                "lng": 142.4592,
-                                "desc": "황금빛으로 물드는 비에이 구릉 도로의 노을 감상 포인트"
-                        },
-                        {
-                                "time": "18:30",
-                                "section": "Evening",
-                                "icon": "🏡",
-                                "name": "후라노 에어비앤비 체크인",
-                                "rating": "4.8★ · 에어비앤비 (금요일)",
-                                "lat": 43.345,
-                                "lng": 142.388,
-                                "desc": "후라노 가족 주택 2층 체크인 (주말 정액 요금 = 비용 절약)"
-                        }
-                ],
-                "date": "8/21(금)",
-                "isoDate": "2026-08-21"
-        },
-        "5": {
-                "label": "5일차",
-                "title": "5일차: 후라노 풀코스 & 청의 호수",
-                "subtitle": "새벽 열기구 → 숲속 피아노 → 마르쉐 → 치즈공방 → 꽃밭 → 멜론 → 청의 호수 → 흰수염폭포",
-                "routeUrl": "https://www.google.com/maps/dir/43.3450,142.3880/43.3444,142.3611/43.3235,142.3551/43.5292,142.4651/43.4168,142.4281/43.4935,142.6142/43.4736,142.6391",
-                "items": [
-                        {
-                                "time": "05:40",
-                                "section": "Morning",
-                                "icon": "🎈",
-                                "name": "후라노 열기구 계류 비행",
-                                "rating": "4.8★ · 사전예약필수",
-                                "lat": 43.3444,
-                                "lng": 142.3611,
-                                "desc": "05:40 접수 ➡️ 06:00 탑승. 새벽 후라노 분지 상공 파노라마 감상",
-                                "pickNote": "🎈 <b>새벽 사전 예약 필수!</b> 05:40 접수 후 06:00 탑승."
-                        },
-                        {
-                                "time": "07:10",
-                                "section": "Morning",
-                                "icon": "🎹",
-                                "name": "신후라노 프린스 숲속 피아노",
-                                "rating": "4.7★ · 바람의가든",
-                                "lat": 43.3235,
-                                "lng": 142.3551,
-                                "desc": "열기구 후 차로 5분 이동. 맑은 아침 숲속 정원에서 줄 안 서고 낭만 피아노 연주 & 닝구르테라스 산책",
-                                "pickNote": "🎹 <b>꿀팁:</b> 열기구 직후 아침 7시경 방문하시면 웨이팅 없이 한적한 숲속 피아노 산책이 가능합니다."
-                        },
-                        {
-                                "time": "10:30",
-                                "section": "Morning",
-                                "icon": "🍙",
-                                "name": "후라노 마르쉐 (브런치)",
-                                "rating": "4.3★ · 로컬마켓",
-                                "lat": 43.3422,
-                                "lng": 142.3871,
-                                "desc": "니기리맘마 주먹밥 및 기념품 쇼핑"
-                        },
-                        {
-                                "time": "12:30",
-                                "section": "Afternoon",
-                                "icon": "🧀",
-                                "name": "후라노 치즈공방 (젤라또/피자)",
-                                "rating": "4.2★ · 체험",
-                                "lat": 43.3206,
-                                "lng": 142.3771,
-                                "desc": "갓 짜낸 우유로 만든 신선한 피자 & 아이스크림 간식",
-                                "tel": "0167-23-1156"
-                        },
-                        {
-                                "time": "14:30",
-                                "section": "Afternoon",
-                                "icon": "🌈",
-                                "name": "사계채의 언덕 (시키사이노오카)",
-                                "rating": "4.6★ · 무지개꽃밭",
-                                "lat": 43.5292,
-                                "lng": 142.4651,
-                                "desc": "8월 중하순 절정인 알록달록 무지개 꽃밭 융단! 버기카 대여 추천",
-                                "tel": "0166-95-2758"
-                        },
-                        {
-                                "time": "16:00",
-                                "section": "Afternoon",
-                                "icon": "🍈",
-                                "name": "토미타 멜론 하우스",
-                                "rating": "4.5★ · 디저트",
-                                "lat": 43.4168,
-                                "lng": 142.4281,
-                                "desc": "홋카이도 제철 멜론 소프트아이스크림 섭취",
-                                "tel": "0167-39-3397"
-                        },
-                        {
-                                "time": "17:30",
-                                "section": "Evening",
-                                "icon": "💧",
-                                "name": "아오이이케 (청의 호수)",
-                                "rating": "4.4★ · 절경",
-                                "lat": 43.4935,
-                                "lng": 142.6142,
-                                "desc": "코발트블루 빛 신비로운 호숫가 산책"
-                        },
-                        {
-                                "time": "18:30",
-                                "section": "Evening",
-                                "icon": "♨️",
-                                "name": "흰수염폭포 & 에어비앤비 복귀",
-                                "rating": "4.5★ · 폭포",
-                                "lat": 43.4736,
-                                "lng": 142.6391,
-                                "desc": "푸른 온천수가 떨어지는 절벽 폭포 감상 후 후라노 연박 복귀"
-                        }
-                ],
-                "date": "8/22(토)",
-                "isoDate": "2026-08-22"
-        },
-        "6": {
-                "label": "6일차",
-                "title": "6일차: 모에레누마 & 니조시장 & 시로이코이비토",
-                "subtitle": "후라노 체크아웃 → 예술공원 자전거 → 니조시장 → 시로이코이비토파크 → 삿포로 숙박",
-                "routeUrl": "https://www.google.com/maps/dir/43.3450,142.3880/43.1228,141.4258/43.0673,141.3521/43.0951,141.3119/43.0554,141.3533",
-                "items": [
-                        {
-                                "time": "10:00",
-                                "section": "Morning",
-                                "icon": "🚗",
-                                "name": "후라노 출발 → 모에레누마",
-                                "rating": "2시간 소요",
-                                "lat": 43.345,
-                                "lng": 142.388,
-                                "desc": "후라노 체크아웃 후 삿포로 외곽 모에레누마 공원으로 출발"
-                        },
-                        {
-                                "time": "12:00",
-                                "section": "Afternoon",
-                                "icon": "📐",
-                                "name": "모에레누마 공원 (자전거 라이딩)",
-                                "rating": "4.6★ · 예술공원",
-                                "lat": 43.1228,
-                                "lng": 141.4258,
-                                "desc": "이삼 노구치가 설계한 대형 예술 공원. 자전거 대여 후 유리 피라미드 & 분수 광장 감상"
-                        },
-                        {
-                                "time": "15:00",
-                                "section": "Afternoon",
-                                "icon": "🐟",
-                                "name": "니조 시장 (해산물 간식)",
-                                "rating": "4.3★ · 시장",
-                                "lat": 43.0673,
-                                "lng": 141.3521,
-                                "desc": "삿포로 중심 수산물 시장. 신선한 해산물 꼬치나 스프 섭취"
-                        },
-                        {
-                                "time": "16:30",
-                                "section": "Afternoon",
-                                "icon": "🍪",
-                                "name": "시로이코이비토 파크 & 대량구매",
-                                "rating": "4.4★ · 과자공장",
-                                "lat": 43.0951,
-                                "lng": 141.3119,
-                                "desc": "홋카이도 최고 인기 기념품 공장 견학 & 선물용 대량 구매",
-                                "tel": "011-666-1481",
-                                "pickNote": "🍪 <b>면세 쇼핑 팁:</b> 홋카이도 인기 과자류 대량 선물 구매 전용 매장입니다."
-                        },
-                        {
-                                "time": "18:30",
-                                "section": "Evening",
-                                "icon": "🏨",
-                                "name": "삿포로 시내 체크인 & 마지막 밤",
-                                "rating": "4.1★ · 숙소",
-                                "lat": 43.0554,
-                                "lng": 141.3533,
-                                "desc": "스스키노 호텔 체크인 후 스프카레 또는 징기스칸 마지막 저녁식사"
-                        }
-                ],
-                "date": "8/23(일)",
-                "isoDate": "2026-08-23"
-        },
-        "7": {
-                "label": "7일차",
-                "title": "7일차: 렌터카 반납 & 15:05 귀국",
-                "subtitle": "삿포로 → 공항 드라이브(1시간) → 렌터카 반납 → 라멘도장 점심 → 출국",
-                "routeUrl": "https://www.google.com/maps/dir/43.0554,141.3533/42.7930,141.6780/42.7863,141.6814",
-                "items": [
-                        {
-                                "time": "11:30",
-                                "section": "Morning",
-                                "icon": "🚘",
-                                "name": "삿포로 출발 → 공항 드라이브",
-                                "rating": "약 1시간 소요",
-                                "lat": 43.0554,
-                                "lng": 141.3533,
-                                "desc": "체크아웃 후 짐을 차에 싣고 신치토세 공항 렌터카 반납 지점으로 출발"
-                        },
-                        {
-                                "time": "12:30",
-                                "section": "Afternoon",
-                                "icon": "🚗",
-                                "name": "신치토세 공항 렌터카 반납",
-                                "rating": "반납완료",
-                                "lat": 42.793,
-                                "lng": 141.678,
-                                "desc": "차량 최종 반납 완료 후 셔틀버스로 공항 터미널 이동"
-                        },
-                        {
-                                "time": "13:30",
-                                "section": "Afternoon",
-                                "icon": "🍫",
-                                "name": "공항 라멘도장 & 면세 쇼핑",
-                                "rating": "4.6★ · 마지막미식",
-                                "lat": 42.7865,
-                                "lng": 141.6811,
-                                "desc": "홋카이도 마지막 라멘 점심 + 로이스 초콜릿 면세 쇼핑",
-                                "tel": "0123-45-6755"
-                        },
-                        {
-                                "time": "15:05",
-                                "section": "Afternoon",
-                                "icon": "🛫",
-                                "name": "신치토세 공항 귀국",
-                                "rating": "귀국편",
-                                "lat": 42.7863,
-                                "lng": 141.6814,
-                                "desc": "출국 수속 후 비행기 탑승 및 귀국"
-                        }
-                ],
-                "date": "8/24(월)",
-                "isoDate": "2026-08-24"
+<div class="tabs" id="tabs"></div>
+
+<main id="main"></main>
+
+<footer>Made for our family trip · Leaflet · 지도 데이터 ⓒ OpenStreetMap contributors</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const DAYS = [
+  {
+    "id": 1,
+    "label": "1일차",
+    "date": "8/18(화)",
+    "isoDate": "2026-08-18",
+    "title": "1일차: 도착 & 삿포로 축제",
+    "summary": "13:45 도착 → 비어가든·다누키코지 축제 폐막일 직행",
+    "routeFrom": "New Chitose Airport",
+    "routeTo": "Susukino Station Sapporo",
+    "items": [
+      {
+        "period": "Afternoon",
+        "time": "13:45",
+        "icon": "🛫",
+        "title": "신치토세 공항 도착",
+        "meta": "이동",
+        "desc": "JR 쾌속 에어포트로 삿포로/스스키노 이동 (약 40분 소요)",
+        "lat": 42.7863,
+        "lng": 141.6814,
+        "q": "신치토세 공항 도착 42.7863,141.6814"
+      },
+      {
+        "period": "Afternoon",
+        "time": "15:30",
+        "icon": "🏨",
+        "title": "스스키노 숙소 체크인",
+        "meta": "숙소",
+        "desc": "짐 풀고 도보로 오도리 공원 출발",
+        "lat": 43.0554,
+        "lng": 141.3533,
+        "q": "스스키노 숙소 체크인 43.0554,141.3533"
+      },
+      {
+        "period": "Evening",
+        "time": "17:00",
+        "icon": "🍺",
+        "title": "오도리 비어가든 (★폐막일★)",
+        "meta": "4.5★ · 맥주축제 ~21:00",
+        "desc": "5~8초메 4대 맥주사 구역. 오늘(8/18) 마지막 폐막일! 징기스칸 & 생맥주",
+        "lat": 43.0601,
+        "lng": 141.3496,
+        "q": "오도리 비어가든 (★폐막일★) 43.0601,141.3496"
+      },
+      {
+        "period": "Evening",
+        "time": "21:00",
+        "icon": "🏮",
+        "title": "다누키코지 마츠리 (★폐막일★)",
+        "meta": "4.4★ · 야간축제",
+        "desc": "다누키코지 상점가 축제 오늘이 마지막 날! 야시장 구경",
+        "lat": 43.0567,
+        "lng": 141.3536,
+        "q": "다누키코지 마츠리 (★폐막일★) 43.0567,141.3536"
+      },
+      {
+        "period": "Night",
+        "time": "22:30",
+        "icon": "🍨",
+        "title": "시메파르페 바",
+        "meta": "4.6★ · 디저트",
+        "desc": "삿포로 정석 술 마신 후 시메파르페로 첫날 마무리",
+        "lat": 43.0558,
+        "lng": 141.3528,
+        "q": "시메파르페 바 43.0558,141.3528"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "label": "2일차",
+    "date": "8/19(수)",
+    "isoDate": "2026-08-19",
+    "title": "2일차: 시코쓰호 & 조잔케이 온천",
+    "summary": "렌터카 픽업 → 투명도 1위 호수 SUP/페달보트 → 조잔케이 온천 료칸",
+    "routeFrom": "Susukino Station Sapporo",
+    "routeTo": "Hotel Shika no Yu Jozankei",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "09:00",
+        "icon": "🚗",
+        "title": "삿포로 렌터카 픽업",
+        "meta": "렌터카",
+        "desc": "차량 수령 후 남쪽 시코쓰 호수로 드라이브 출발",
+        "lat": 43.0585,
+        "lng": 141.353,
+        "q": "삿포로 렌터카 픽업 43.0585,141.353"
+      },
+      {
+        "period": "Morning",
+        "time": "11:30",
+        "icon": "🍜",
+        "title": "시코쓰호 점심",
+        "meta": "4.2★ · 식당가",
+        "desc": "호숫가 온천 마을 식당에서 점심식사",
+        "lat": 42.7635,
+        "lng": 141.4119,
+        "q": "시코쓰호 점심 42.7635,141.4119"
+      },
+      {
+        "period": "Afternoon",
+        "time": "13:30",
+        "icon": "🏄",
+        "title": "시코쓰호 SUP / 페달보트",
+        "meta": "4.9★ · 액티비티",
+        "desc": "초투명 크리스탈 블루 호수 위에서 물놀이",
+        "lat": 42.7628,
+        "lng": 141.4128,
+        "q": "시코쓰호 SUP / 페달보트 42.7628,141.4128"
+      },
+      {
+        "period": "Evening",
+        "time": "17:30",
+        "icon": "♨️",
+        "title": "조잔케이 온천 료칸 체크인",
+        "meta": "4.6★ · 온천료칸",
+        "desc": "계곡 온천마을 이동(1시간 15분). 물놀이 피로를 녹이는 노천 온천 & 가이세키 저녁",
+        "lat": 42.9774,
+        "lng": 141.1718,
+        "q": "조잔케이 온천 료칸 체크인 42.9774,141.1718"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "label": "3일차",
+    "date": "8/20(목)",
+    "isoDate": "2026-08-20",
+    "title": "3일차: 샤코탄 절경 & 요이치 에어비앤비",
+    "summary": "샤코탄 블루 + 시마무이 해안 → 우니동 → 오타루 운하 → 요이치 에어비앤비 숙박",
+    "routeFrom": "Jozankei Onsen",
+    "routeTo": "Yoichi Station Hokkaido",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "09:00",
+        "icon": "🚗",
+        "title": "조잔케이 출발 → 샤코탄",
+        "meta": "1시간 30분 소요",
+        "desc": "서쪽 샤코탄 반도로 드라이브",
+        "lat": 42.9774,
+        "lng": 141.1718,
+        "q": "조잔케이 출발 → 샤코탄 42.9774,141.1718"
+      },
+      {
+        "period": "Morning",
+        "time": "11:00",
+        "icon": "🌊",
+        "title": "샤코탄 가무이 미사키",
+        "meta": "4.7★ · 절경/바다",
+        "desc": "영롱한 샤코탄 블루 바다를 내려다보는 곶 산책",
+        "lat": 43.3323,
+        "lng": 140.3475,
+        "q": "샤코탄 가무이 미사키 43.3323,140.3475"
+      },
+      {
+        "period": "Afternoon",
+        "time": "12:00",
+        "icon": "🏖️",
+        "title": "시마무이 해안 (에메랄드 비치)",
+        "meta": "4.8★ · 비밀해변",
+        "desc": "차로 5분 거리. 일본 최고 투명도의 에메랄드 빛 비밀 해안가",
+        "lat": 43.3101,
+        "lng": 140.4455,
+        "q": "시마무이 해안 (에메랄드 비치) 43.3101,140.4455"
+      },
+      {
+        "period": "Afternoon",
+        "time": "13:30",
+        "icon": "🍱",
+        "title": "샤코탄 생 우니동 점심",
+        "meta": "4.6★ · 미식",
+        "desc": "8월 제철 피크! 신선한 성게알(우니) 덮밥",
+        "lat": 43.295,
+        "lng": 140.402,
+        "q": "샤코탄 생 우니동 점심 43.295,140.402"
+      },
+      {
+        "period": "Evening",
+        "time": "16:00",
+        "icon": "🚤",
+        "title": "오타루 운하 크루즈",
+        "meta": "4.5★ · 운하",
+        "desc": "가스등이 켜지는 황혼 시간대 낭만 크루즈 탑승",
+        "lat": 43.1996,
+        "lng": 140.0068,
+        "q": "오타루 운하 크루즈 43.1996,140.0068"
+      },
+      {
+        "period": "Evening",
+        "time": "18:30",
+        "icon": "🏡",
+        "title": "요이치 에어비앤비 체크인",
+        "meta": "에어비앤비 (바다 전경 주택)",
+        "desc": "바다가 내려다보이는 요이치 독채 에어비앤비 체크인 및 휴식",
+        "lat": 43.1869,
+        "lng": 140.7892,
+        "q": "요이치 에어비앤비 체크인 43.1869,140.7892"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "label": "4일차",
+    "date": "8/21(금)",
+    "isoDate": "2026-08-21",
+    "title": "4일차: 요이치·텐구야마 → 비에이 → 후라노",
+    "summary": "위스키 양조장 → 텐구야마 로프웨이 → 비에이 노을 → 후라노 에어비앤비 (금요일)",
+    "routeFrom": "Yoichi Nikka Whisky Distillery",
+    "routeTo": "Furano Station Hokkaido",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "09:30",
+        "icon": "🥃",
+        "title": "요이치 니카 위스키 증류소",
+        "meta": "4.5★ · 양조장",
+        "desc": "붉은 지붕의 아름다운 증류소 견학 및 싱글몰트 위스키 무료 시음",
+        "lat": 43.1869,
+        "lng": 140.7892,
+        "q": "요이치 니카 위스키 증류소 43.1869,140.7892"
+      },
+      {
+        "period": "Afternoon",
+        "time": "12:30",
+        "icon": "🗼",
+        "title": "텐구야마 로프웨이",
+        "meta": "4.5★ · 전망대",
+        "desc": "오타루 항구 & 시내 파노라마 전망. 정상 카페에서 점심도 가능",
+        "lat": 43.1788,
+        "lng": 139.9798,
+        "q": "텐구야마 로프웨이 43.1788,139.9798"
+      },
+      {
+        "period": "Afternoon",
+        "time": "15:00",
+        "icon": "🌅",
+        "title": "비에이 신에이 언덕 (노을)",
+        "meta": "4.6★ · 일몰명소",
+        "desc": "황금빛으로 물드는 비에이 구릉 도로의 노을 감상 포인트",
+        "lat": 43.5577,
+        "lng": 142.4592,
+        "q": "비에이 신에이 언덕 (노을) 43.5577,142.4592"
+      },
+      {
+        "period": "Evening",
+        "time": "18:30",
+        "icon": "🏡",
+        "title": "후라노 에어비앤비 체크인",
+        "meta": "4.8★ · 에어비앤비 (금요일)",
+        "desc": "후라노 가족 주택 2층 체크인 (주말 정액 요금 = 비용 절약)",
+        "lat": 43.345,
+        "lng": 142.388,
+        "q": "후라노 에어비앤비 체크인 43.345,142.388"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "label": "5일차",
+    "date": "8/22(토)",
+    "isoDate": "2026-08-22",
+    "title": "5일차: 후라노 풀코스 & 청의 호수",
+    "summary": "새벽 열기구 → 숲속 피아노 → 마르쉐 → 치즈공방 → 꽃밭 → 멜론 → 청의 호수 → 흰수염폭포",
+    "routeFrom": "Furano Station Hokkaido",
+    "routeTo": "Shiraige Falls Biei",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "05:40",
+        "icon": "🎈",
+        "title": "후라노 열기구 계류 비행",
+        "meta": "4.8★ · 사전예약필수",
+        "desc": "05:40 접수 ➡️ 06:00 탑승. 새벽 후라노 분지 상공 파노라마 감상",
+        "lat": 43.3444,
+        "lng": 142.3611,
+        "q": "후라노 열기구 계류 비행 43.3444,142.3611"
+      },
+      {
+        "period": "Morning",
+        "time": "07:10",
+        "icon": "🎹",
+        "title": "신후라노 프린스 숲속 피아노",
+        "meta": "4.7★ · 바람의가든",
+        "desc": "열기구 후 차로 5분 이동. 맑은 아침 숲속 정원에서 줄 안 서고 낭만 피아노 연주 & 닝구르테라스 산책",
+        "lat": 43.3235,
+        "lng": 142.3551,
+        "q": "신후라노 프린스 숲속 피아노 43.3235,142.3551"
+      },
+      {
+        "period": "Morning",
+        "time": "10:30",
+        "icon": "🍙",
+        "title": "후라노 마르쉐 (브런치)",
+        "meta": "4.3★ · 로컬마켓",
+        "desc": "니기리맘마 주먹밥 및 기념품 쇼핑",
+        "lat": 43.3422,
+        "lng": 142.3871,
+        "q": "후라노 마르쉐 (브런치) 43.3422,142.3871"
+      },
+      {
+        "period": "Afternoon",
+        "time": "12:30",
+        "icon": "🧀",
+        "title": "후라노 치즈공방 (젤라또/피자)",
+        "meta": "4.2★ · 체험",
+        "desc": "갓 짜낸 우유로 만든 신선한 피자 & 아이스크림 간식",
+        "lat": 43.3206,
+        "lng": 142.3771,
+        "q": "후라노 치즈공방 (젤라또/피자) 43.3206,142.3771"
+      },
+      {
+        "period": "Afternoon",
+        "time": "14:30",
+        "icon": "🌈",
+        "title": "사계채의 언덕 (시키사이노오카)",
+        "meta": "4.6★ · 무지개꽃밭",
+        "desc": "8월 중하순 절정인 알록달록 무지개 꽃밭 융단! 버기카 대여 추천",
+        "lat": 43.5292,
+        "lng": 142.4651,
+        "q": "사계채의 언덕 (시키사이노오카) 43.5292,142.4651"
+      },
+      {
+        "period": "Afternoon",
+        "time": "16:00",
+        "icon": "🍈",
+        "title": "토미타 멜론 하우스",
+        "meta": "4.5★ · 디저트",
+        "desc": "홋카이도 제철 멜론 소프트아이스크림 섭취",
+        "lat": 43.4168,
+        "lng": 142.4281,
+        "q": "토미타 멜론 하우스 43.4168,142.4281"
+      },
+      {
+        "period": "Evening",
+        "time": "17:30",
+        "icon": "💧",
+        "title": "아오이이케 (청의 호수)",
+        "meta": "4.4★ · 절경",
+        "desc": "코발트블루 빛 신비로운 호숫가 산책",
+        "lat": 43.4935,
+        "lng": 142.6142,
+        "q": "아오이이케 (청의 호수) 43.4935,142.6142"
+      },
+      {
+        "period": "Evening",
+        "time": "18:30",
+        "icon": "♨️",
+        "title": "흰수염폭포 & 에어비앤비 복귀",
+        "meta": "4.5★ · 폭포",
+        "desc": "푸른 온천수가 떨어지는 절벽 폭포 감상 후 후라노 연박 복귀",
+        "lat": 43.4736,
+        "lng": 142.6391,
+        "q": "흰수염폭포 & 에어비앤비 복귀 43.4736,142.6391"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "label": "6일차",
+    "date": "8/23(일)",
+    "isoDate": "2026-08-23",
+    "title": "6일차: 모에레누마 & 니조시장 & 시로이코이비토",
+    "summary": "후라노 체크아웃 → 예술공원 자전거 → 니조시장 → 시로이코이비토파크 → 삿포로 숙박",
+    "routeFrom": "Furano Station Hokkaido",
+    "routeTo": "Susukino Station Sapporo",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "10:00",
+        "icon": "🚗",
+        "title": "후라노 출발 → 모에레누마",
+        "meta": "2시간 소요",
+        "desc": "후라노 체크아웃 후 삿포로 외곽 모에레누마 공원으로 출발",
+        "lat": 43.345,
+        "lng": 142.388,
+        "q": "후라노 출발 → 모에레누마 43.345,142.388"
+      },
+      {
+        "period": "Afternoon",
+        "time": "12:00",
+        "icon": "📐",
+        "title": "모에레누마 공원 (자전거 라이딩)",
+        "meta": "4.6★ · 예술공원",
+        "desc": "이삼 노구치가 설계한 대형 예술 공원. 자전거 대여 후 유리 피라미드 & 분수 광장 감상",
+        "lat": 43.1228,
+        "lng": 141.4258,
+        "q": "모에레누마 공원 (자전거 라이딩) 43.1228,141.4258"
+      },
+      {
+        "period": "Afternoon",
+        "time": "15:00",
+        "icon": "🐟",
+        "title": "니조 시장 (해산물 간식)",
+        "meta": "4.3★ · 시장",
+        "desc": "삿포로 중심 수산물 시장. 신선한 해산물 꼬치나 스프 섭취",
+        "lat": 43.0673,
+        "lng": 141.3521,
+        "q": "니조 시장 (해산물 간식) 43.0673,141.3521"
+      },
+      {
+        "period": "Afternoon",
+        "time": "16:30",
+        "icon": "🍪",
+        "title": "시로이코이비토 파크 & 대량구매",
+        "meta": "4.4★ · 과자공장",
+        "desc": "홋카이도 최고 인기 기념품 공장 견학 & 선물용 대량 구매",
+        "lat": 43.0951,
+        "lng": 141.3119,
+        "q": "시로이코이비토 파크 & 대량구매 43.0951,141.3119"
+      },
+      {
+        "period": "Evening",
+        "time": "18:30",
+        "icon": "🏨",
+        "title": "삿포로 시내 체크인 & 마지막 밤",
+        "meta": "4.1★ · 숙소",
+        "desc": "스스키노 호텔 체크인 후 스프카레 또는 징기스칸 마지막 저녁식사",
+        "lat": 43.0554,
+        "lng": 141.3533,
+        "q": "삿포로 시내 체크인 & 마지막 밤 43.0554,141.3533"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "label": "7일차",
+    "date": "8/24(월)",
+    "isoDate": "2026-08-24",
+    "title": "7일차: 렌터카 반납 & 15:05 귀국",
+    "summary": "삿포로 → 공항 드라이브(1시간) → 렌터카 반납 → 라멘도장 점심 → 출국",
+    "routeFrom": "Susukino Station Sapporo",
+    "routeTo": "New Chitose Airport",
+    "items": [
+      {
+        "period": "Morning",
+        "time": "11:30",
+        "icon": "🚘",
+        "title": "삿포로 출발 → 공항 드라이브",
+        "meta": "약 1시간 소요",
+        "desc": "체크아웃 후 짐을 차에 싣고 신치토세 공항 렌터카 반납 지점으로 출발",
+        "lat": 43.0554,
+        "lng": 141.3533,
+        "q": "삿포로 출발 → 공항 드라이브 43.0554,141.3533"
+      },
+      {
+        "period": "Afternoon",
+        "time": "12:30",
+        "icon": "🚗",
+        "title": "신치토세 공항 렌터카 반납",
+        "meta": "반납완료",
+        "desc": "차량 최종 반납 완료 후 셔틀버스로 공항 터미널 이동",
+        "lat": 42.793,
+        "lng": 141.678,
+        "q": "신치토세 공항 렌터카 반납 42.793,141.678"
+      },
+      {
+        "period": "Afternoon",
+        "time": "13:30",
+        "icon": "🍫",
+        "title": "공항 라멘도장 & 면세 쇼핑",
+        "meta": "4.6★ · 마지막미식",
+        "desc": "홋카이도 마지막 라멘 점심 + 로이스 초콜릿 면세 쇼핑",
+        "lat": 42.7865,
+        "lng": 141.6811,
+        "q": "공항 라멘도장 & 면세 쇼핑 42.7865,141.6811"
+      },
+      {
+        "period": "Afternoon",
+        "time": "15:05",
+        "icon": "🛫",
+        "title": "신치토세 공항 귀국",
+        "meta": "귀국편",
+        "desc": "출국 수속 후 비행기 탑승 및 귀국",
+        "lat": 42.7863,
+        "lng": 141.6814,
+        "q": "신치토세 공항 귀국 42.7863,141.6814"
+      }
+    ]
+  }
+];
+
+const map = L.map('map', { scrollWheelZoom:false }).setView([43.06, 141.35], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+let markers = [];
+let routeLine = null;
+function clearMarkers(){
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  if(routeLine){ map.removeLayer(routeLine); routeLine = null; }
+}
+
+function mapLinkFor(item){
+  if(item.mapUrl) return item.mapUrl;
+  if(item.q) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.q)}`;
+  if(item.lat && item.lng) return `https://www.google.com/maps/search/?api=1&query=${item.lat},${item.lng}`;
+  return null;
+}
+
+function renderDay(dayId){
+  const day = DAYS.find(d => d.id === dayId);
+  clearMarkers();
+
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', Number(t.dataset.id) === dayId);
+  });
+
+  const bounds = [];
+  const seen = {};
+  let stopNo = 0;
+  day.items.forEach((item, idx) => {
+    if(item.lat && item.lng){
+      stopNo++;
+      const key = item.lat.toFixed(4) + ',' + item.lng.toFixed(4);
+      const dup = seen[key] || 0;
+      seen[key] = dup + 1;
+      const lat = item.lat + dup * 0.0006;
+      const lng = item.lng + dup * 0.0006;
+      const icon = L.divIcon({
+        className: '',
+        html: `<div class="num-pin"><span>${stopNo}</span></div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 26],
+        popupAnchor: [0, -26]
+      });
+      const marker = L.marker([lat, lng], { icon }).addTo(map);
+      marker.bindPopup(`<b>${stopNo}. ${item.title}</b><br>${item.time !== "—" ? item.time + " · " : ""}${item.meta || ""}`);
+      const stopId = `stop-${stopNo}`;
+      marker.on('click', () => {
+        const card = document.getElementById(stopId);
+        if(card){
+          card.scrollIntoView({ behavior:'smooth', block:'center' });
+          card.classList.add('card-flash');
+          setTimeout(() => card.classList.remove('card-flash'), 1400);
         }
+      });
+      markers.push(marker);
+      bounds.push([lat, lng]);
+    }
+  });
+  if(bounds.length > 1){
+    routeLine = L.polyline(bounds, { color:'#5eb1ff', weight:2, dashArray:'6 8', opacity:0.7 }).addTo(map);
+  }
+  if(bounds.length){
+    map.fitBounds(bounds, { padding:[40,40], maxZoom:14 });
+  }
+
+  let routeHtml = "";
+  if(day.routeFrom && day.routeTo){
+    const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(day.routeFrom)}&destination=${encodeURIComponent(day.routeTo)}&travelmode=driving`;
+    routeHtml = `<a class="route-link" href="${url}" target="_blank" rel="noopener">🚗 경로 열기 (차량 이동)</a>`;
+  }
+
+  let html = `
+    <div class="day-header">
+      <h2>${day.title}</h2>
+      <div class="summary">${day.summary}</div>
+      ${routeHtml}
+    </div>
+  `;
+
+  let lastPeriod = "";
+  let cardStopNo = 0;
+  day.items.forEach((item, idx) => {
+    if(item.period !== lastPeriod){
+      html += `<div class="period-label">${item.period}</div>`;
+      lastPeriod = item.period;
+    }
+    const link = mapLinkFor(item);
+    const hasPin = item.lat && item.lng;
+    if(hasPin) cardStopNo++;
+    const cardId = hasPin ? `id="stop-${cardStopNo}"` : "";
+    const pinBadge = hasPin ? `<span class="pin-badge">${cardStopNo}</span>` : "";
+    if(item.pickNote){
+      html += `<div class="pick-note">${item.pickNote}</div>`;
+    }
+    html += `
+      <div class="card" ${cardId}>
+        <div class="time">${item.time}</div>
+        <div class="icon">${item.icon}</div>
+        <div class="body">
+          <div class="title">${pinBadge}${item.title}</div>
+          ${item.meta ? `<div class="meta">${item.meta}</div>` : ""}
+          <div class="desc">${item.desc}</div>
+          ${(link || item.tel) ? `<div class="links">
+            ${link ? `<a class="maplink" href="${link}" target="_blank" rel="noopener">📍 지도 열기</a>` : ""}
+            ${item.tel ? `<a class="tellink" href="tel:${item.tel.replace(/-/g,'')}">☎ ${item.tel}</a>` : ""}
+          </div>` : ""}
+        </div>
+      </div>
+    `;
+  });
+
+  document.getElementById('main').innerHTML = html;
+}
+
+const tabsEl = document.getElementById('tabs');
+DAYS.forEach(day => {
+  const btn = document.createElement('div');
+  btn.className = 'tab';
+  btn.dataset.id = day.id;
+  btn.textContent = `${day.label} ${day.date}`;
+  btn.addEventListener('click', () => renderDay(day.id));
+  tabsEl.appendChild(btn);
+});
+
+const WEATHER_CODES = {
+  0:["☀️","맑음"], 1:["🌤️","대체로 맑음"], 2:["⛅","구름 조금"], 3:["☁️","흐림"],
+  45:["🌫️","안개"], 48:["🌫️","안개"],
+  51:["🌦️","이슬비"], 53:["🌦️","이슬비"], 55:["🌦️","이슬비"],
+  61:["🌧️","비"], 63:["🌧️","비"], 65:["🌧️","강한 비"],
+  71:["🌨️","눈"], 73:["🌨️","눈"], 75:["❄️","강한 눈"],
+  80:["🌦️","소나기"], 81:["🌦️","소나기"], 82:["⛈️","강한 소나기"],
+  95:["⛈️","뇌우"], 96:["⛈️","뇌우"], 99:["⛈️","뇌우"]
 };
 
-        const WEATHER_CODES = {
-            0:["☀️","맑음"], 1:["🌤️","대체로 맑음"], 2:["⛅","구름 조금"], 3:["☁️","흐림"],
-            45:["🌫️","안개"], 48:["🌫️","안개"],
-            51:["🌦️","이슬비"], 53:["🌦️","이슬비"], 55:["🌦️","이슬비"],
-            61:["🌧️","비"], 63:["🌧️","비"], 65:["🌧️","강한 비"],
-            71:["🌨️","눈"], 73:["🌨️","눈"], 75:["❄️","강한 눈"],
-            80:["🌦️","소나기"], 81:["🌦️","소나기"], 82:["⛈️","강한 소나기"],
-            95:["⛈️","뇌우"], 96:["⛈️","뇌우"], 99:["⛈️","뇌우"]
-        };
+let HOURLY_DATA = null;
+let openWeatherDay = null;
 
-        let HOURLY_DATA = null;
-        let openWeatherDay = null;
+function renderHourlyPanel(dateStr){
+  const panel = document.getElementById('hourlyPanel');
+  if(!HOURLY_DATA || openWeatherDay === dateStr){
+    panel.classList.remove('open');
+    panel.innerHTML = '';
+    openWeatherDay = null;
+    document.querySelectorAll('.weather-card').forEach(c => c.classList.remove('active'));
+    return;
+  }
+  const times = HOURLY_DATA.hourly.time;
+  const chips = [];
+  times.forEach((t, i) => {
+    if(!t.startsWith(dateStr)) return;
+    const hour = Number(t.slice(11,13));
+    if(hour % 2 !== 0) return; // 2시간 간격으로만 표시
+    const code = HOURLY_DATA.hourly.weathercode[i];
+    const [icon] = WEATHER_CODES[code] || ["🌡️"];
+    const temp = Math.round(HOURLY_DATA.hourly.temperature_2m[i]);
+    const pop = HOURLY_DATA.hourly.precipitation_probability[i];
+    chips.push(`<div class="hourly-chip">
+      <div class="hh">${hour}시</div>
+      <div class="hi">${icon}</div>
+      <div class="ht">${temp}°</div>
+      <div class="hp">☔${pop}%</div>
+    </div>`);
+  });
+  panel.innerHTML = chips.join('');
+  panel.classList.add('open');
+  openWeatherDay = dateStr;
+  document.querySelectorAll('.weather-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.date === dateStr);
+  });
+}
 
-        const map = L.map('map', {
-            zoomControl: false,
-            attributionControl: true
-        }).setView([43.0601, 141.3496], 10);
+async function loadWeather(){
+  const bar = document.getElementById('weatherBar');
+  try{
+    let url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
+      + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+      + "&hourly=temperature_2m,weathercode,precipitation_probability"
+      + "&timezone=Asia%2FTokyo&start_date=2026-08-18&end_date=2026-08-24";
+    let res = await fetch(url);
+    if(!res.ok){
+      url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
+        + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+        + "&hourly=temperature_2m,weathercode,precipitation_probability"
+        + "&timezone=Asia%2FTokyo&forecast_days=7";
+      res = await fetch(url);
+    }
+    if(!res.ok) throw new Error("weather fetch failed");
+    const data = await res.json();
+    HOURLY_DATA = data;
+    const days = data.daily.time;
+    bar.innerHTML = days.map((d, i) => {
+      const code = data.daily.weathercode[i];
+      const [icon, desc] = WEATHER_CODES[code] || ["🌡️", "-"];
+      const hi = Math.round(data.daily.temperature_2m_max[i]);
+      const lo = Math.round(data.daily.temperature_2m_min[i]);
+      const pop = data.daily.precipitation_probability_max[i];
+      const matchedDay = DAYS.find(x => (x.isoDate && x.isoDate === d) || (x.date && x.date.includes(d.slice(5).replace('-', '/'))));
+      const label = matchedDay ? (matchedDay.label + ' ' + matchedDay.date) : d.slice(5).replace('-', '/');
+      return `<div class="weather-card" data-date="${d}">
+        <div class="wd">${label}</div>
+        <div class="wi">${icon}</div>
+        <div class="wt">${hi}° <span class="lo">${lo}°</span></div>
+        <div class="wp">☔ ${pop}%</div>
+      </div>`;
+    }).join("");
+    bar.querySelectorAll('.weather-card').forEach(card => {
+      card.addEventListener('click', () => renderHourlyPanel(card.dataset.date));
+    });
+  }catch(e){
+    bar.innerHTML = `<div class="weather-card"><div class="wd">삿포로 날씨</div><div class="wi">🌡️</div><div class="wt" style="font-size:0.72rem;color:var(--sub)">예보 로딩중</div></div>`;
+  }
+}
+loadWeather();
 
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+// 여행 기간 중 접속하면 해당 일차 탭을 자동으로 연다
+const TRIP_START = new Date(2026, 7, 18); // 2026-07-27
+const today = new Date();
+const dayDiff = Math.floor((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - TRIP_START) / 86400000);
+renderDay(dayDiff >= 0 && dayDiff <= 3 ? dayDiff + 1 : 1);
+</script>
 
-        L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            attribution: '지도 데이터 ©2026 Google'
-        }).addTo(map);
-
-        let currentMarkers = [];
-        let currentPolyline = null;
-        let activeTabKey = "1";
-
-        const tabsContainer = document.getElementById("tabsContainer");
-        const panelHeader = document.getElementById("panelHeader");
-        const timelineList = document.getElementById("timelineList");
-
-        function createTabs() {
-            tabsContainer.innerHTML = "";
-            for (let day = 1; day <= 7; day++) {
-                const btn = document.createElement("button");
-                btn.className = `tab-pill ${day === 1 ? 'active' : ''}`;
-                btn.id = `tab_${day}`;
-                btn.innerText = `${day}일차`;
-                btn.onclick = () => selectDay(day.toString());
-                tabsContainer.appendChild(btn);
-            }
-        }
-
-        function selectDay(dayKey) {
-            activeTabKey = dayKey;
-            map.invalidateSize();
-
-            document.querySelectorAll(".tab-pill").forEach(b => b.classList.remove("active"));
-            const targetBtn = document.getElementById(`tab_${dayKey}`);
-            if (targetBtn) targetBtn.classList.add("active");
-
-            currentMarkers.forEach(m => map.removeLayer(m));
-            currentMarkers = [];
-            if (currentPolyline) map.removeLayer(currentPolyline);
-
-            const data = itineraryData[dayKey];
-            if(!data) return;
-
-            panelHeader.innerHTML = `
-                <span class="day-badge">${data.label} (${data.date})</span>
-                <h2 class="day-title">${data.title}</h2>
-                <p class="day-subtitle">${data.subtitle}</p>
-                ${data.routeUrl ? `<a href="${data.routeUrl}" target="_blank" class="route-btn">
-                    <svg viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
-                    🚗 구글 맵 드라이브 경로 열기
-                </a>` : ''}
-            `;
-
-            timelineList.innerHTML = "";
-            let currentSection = "";
-            const coordsList = [];
-
-            let pinNo = 0;
-            data.items.forEach((item, idx) => {
-                const hasCoords = item.lat && item.lng;
-                if(hasCoords) {
-                    coordsList.push([item.lat, item.lng]);
-                    pinNo++;
-                }
-
-                if (item.section && item.section !== currentSection) {
-                    currentSection = item.section;
-                    const secEl = document.createElement("div");
-                    secEl.className = "section-header";
-                    secEl.innerText = currentSection;
-                    timelineList.appendChild(secEl);
-                }
-
-                if(item.pickNote){
-                    const noteEl = document.createElement("div");
-                    noteEl.className = "pick-note";
-                    noteEl.innerHTML = item.pickNote;
-                    timelineList.appendChild(noteEl);
-                }
-
-                const card = document.createElement("div");
-                card.className = "card-item";
-                const cardId = hasCoords ? `stop-${pinNo}` : `item-${idx}`;
-                card.id = cardId;
-
-                const pinBadge = hasCoords ? `<span class="pin-badge">${pinNo}</span>` : '';
-                const gmapSearchUrl = hasCoords ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.name + ' ' + item.lat + ',' + item.lng)}` : null;
-
-                card.onclick = () => {
-                    if(hasCoords){
-                        map.flyTo([item.lat, item.lng], 14, { duration: 0.6 });
-                        currentMarkers[pinNo - 1]?.openPopup();
-                    }
-                };
-
-                card.innerHTML = `
-                    <div class="card-icon">${item.icon}</div>
-                    <div class="card-content">
-                        <span class="card-time">${item.time}</span>
-                        <div class="card-title">${pinBadge}${item.name}</div>
-                        ${item.rating ? `<div class="card-meta">${item.rating}</div>` : ''}
-                        <div class="card-desc">${item.desc}</div>
-                        <div class="card-actions">
-                            ${gmapSearchUrl ? `<a href="${gmapSearchUrl}" target="_blank" class="card-btn btn-nav" onclick="event.stopPropagation();">📍 지도 열기</a>` : ''}
-                            ${item.tel ? `<a href="tel:${item.tel.replace(/-/g,'')}" class="card-btn btn-tel" onclick="event.stopPropagation();">☎ ${item.tel}</a>` : ''}
-                        </div>
-                    </div>
-                `;
-                timelineList.appendChild(card);
-
-                if(hasCoords){
-                    const iconHtml = `<div class="num-pin">${pinNo}</div>`;
-                    const customIcon = L.divIcon({
-                        className: 'custom-pin-wrapper',
-                        html: iconHtml,
-                        iconSize: [28, 28],
-                        iconAnchor: [14, 14]
-                    });
-
-                    const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
-                    marker.bindPopup(`
-                        <div style="font-family:'Pretendard',sans-serif; padding:4px; min-width:170px;">
-                            <strong style="color:#0f172a; font-size:0.92rem;">[${pinNo}] ${item.name}</strong><br>
-                            <span style="color:#64748b; font-size:0.78rem;">${item.time} · ${item.desc}</span><br>
-                            <a href="${gmapSearchUrl}" target="_blank" style="display:inline-block; margin-top:8px; background:#2563eb; color:#fff; padding:5px 10px; border-radius:6px; font-weight:700; font-size:0.75rem; text-decoration:none;">
-                                🧭 구글맵 내비 열기
-                            </a>
-                        </div>
-                    `);
-
-                    marker.on('click', () => {
-                        map.flyTo([item.lat, item.lng], 14, { duration: 0.6 });
-                        const targetCard = document.getElementById(cardId);
-                        if(targetCard){
-                            targetCard.scrollIntoView({ behavior:'smooth', block:'center' });
-                            targetCard.classList.add('card-flash');
-                            setTimeout(() => targetCard.classList.remove('card-flash'), 1400);
-                        }
-                    });
-
-                    currentMarkers.push(marker);
-                }
-            });
-
-            if (coordsList.length > 1) {
-                currentPolyline = L.polyline(coordsList, {
-                    color: '#2563eb',
-                    weight: 4.5,
-                    dashArray: '6 8',
-                    opacity: 0.8
-                }).addTo(map);
-            }
-
-            if (coordsList.length > 0) {
-                map.flyTo(coordsList[0], 12, { duration: 0.8 });
-            }
-        }
-
-        function renderHourlyPanel(dateStr){
-            const panel = document.getElementById('hourlyPanel');
-            if(!HOURLY_DATA || openWeatherDay === dateStr){
-                panel.classList.remove('open');
-                panel.innerHTML = '';
-                openWeatherDay = null;
-                document.querySelectorAll('.weather-card').forEach(c => c.classList.remove('active'));
-                return;
-            }
-            const times = HOURLY_DATA.hourly.time;
-            const chips = [];
-            times.forEach((t, i) => {
-                if(!t.startsWith(dateStr)) return;
-                const hour = Number(t.slice(11,13));
-                if(hour % 2 !== 0) return;
-                const code = HOURLY_DATA.hourly.weathercode[i];
-                const [icon] = WEATHER_CODES[code] || ["🌡️"];
-                const temp = Math.round(HOURLY_DATA.hourly.temperature_2m[i]);
-                const pop = HOURLY_DATA.hourly.precipitation_probability[i];
-                chips.push(`<div class="hourly-chip">
-                    <div class="hh">${hour}시</div>
-                    <div class="hi">${icon}</div>
-                    <div class="ht">${temp}°</div>
-                    <div class="hp">☔${pop}%</div>
-                </div>`);
-            });
-            panel.innerHTML = chips.join('');
-            panel.classList.add('open');
-            openWeatherDay = dateStr;
-            document.querySelectorAll('.weather-card').forEach(c => {
-                c.classList.toggle('active', c.dataset.date === dateStr);
-            });
-        }
-
-        async function loadWeather(){
-            const bar = document.getElementById('weatherBar');
-            try{
-                let url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
-                    + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
-                    + "&hourly=temperature_2m,weathercode,precipitation_probability"
-                    + "&timezone=Asia%2FTokyo&start_date=2026-08-18&end_date=2026-08-24";
-                let res = await fetch(url);
-                if(!res.ok){
-                    url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
-                        + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
-                        + "&hourly=temperature_2m,weathercode,precipitation_probability"
-                        + "&timezone=Asia%2FTokyo&forecast_days=7";
-                    res = await fetch(url);
-                }
-                if(!res.ok) throw new Error("weather fetch failed");
-                const data = await res.json();
-                HOURLY_DATA = data;
-                const days = data.daily.time;
-                bar.innerHTML = days.map((d, i) => {
-                    const code = data.daily.weathercode[i];
-                    const [icon] = WEATHER_CODES[code] || ["🌡️"];
-                    const hi = Math.round(data.daily.temperature_2m_max[i]);
-                    const lo = Math.round(data.daily.temperature_2m_min[i]);
-                    const pop = data.daily.precipitation_probability_max[i];
-                    const matchedDay = Object.values(itineraryData).find(x => x.isoDate === d || (x.date && x.date.includes(d.slice(5).replace('-', '/'))));
-                    const label = matchedDay ? matchedDay.label : d.slice(5).replace('-', '/');
-                    return `<div class="weather-card" data-date="${d}">
-                        <div class="wd">${label}</div>
-                        <div class="wi">${icon}</div>
-                        <div class="wt">${hi}° <span class="lo">${lo}°</span></div>
-                        <div class="wp">☔${pop}%</div>
-                    </div>`;
-                }).join("");
-                bar.querySelectorAll('.weather-card').forEach(card => {
-                    card.addEventListener('click', () => renderHourlyPanel(card.dataset.date));
-                });
-            }catch(e){
-                bar.innerHTML = `<div class="weather-card"><div class="wd">삿포로 날씨</div><div class="wi">🌡️</div><div class="wt" style="font-size:0.72rem;color:var(--text-gray)">예보 로딩중</div></div>`;
-            }
-        }
-
-        createTabs();
-        selectDay("1");
-        loadWeather();
-    </script>
 </body>
 </html>
