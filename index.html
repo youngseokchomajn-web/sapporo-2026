@@ -314,36 +314,11 @@
     .card a.maplink, .card a.tellink{font-size:0.92rem;padding:7px 10px;}
   }
 
-  #map {
-    height: 280px;
-    width: 100%;
-    border-radius: 14px;
-    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
-    margin-bottom: 12px;
-  }
-
-  #main {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 0 16px 20px 16px;
-    box-sizing: border-box;
-  }
-
-  .day-header {
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 16px;
-    margin-bottom: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  }
-
   /* 상세 일정 전용 독립 스크롤 컨테이너 */
   .items-scroll-container {
     max-height: 420px;
     overflow-y: auto;
-    padding-right: 6px;
-    border-radius: 12px;
+    padding-right: 4px;
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
   }
@@ -364,7 +339,7 @@
 <body>
 
 <header>
-  <h1>🍜 2026 삿포로 가족여행</h1>
+  <h1>🍜 2026 삿포로 여름여행</h1>
   <p>2026.08.18(화) – 08.24(월)</p>
 </header>
 
@@ -611,7 +586,7 @@ const DAYS = [
         "time": "12:30",
         "icon": "🗼",
         "title": "텐구야마 로프웨이",
-        "meta": "4.5★ · 차로 이동 · 예상 약 30분",
+        "meta": "4.5★ · 차로 이동 약 30분",
         "desc": "오타루 항구 & 시내 파노라마 전망. 정상 카페에서 점심도 가능",
         "lat": 43.1788,
         "lng": 139.9798,
@@ -941,7 +916,7 @@ function renderDay(dayId){
     routeHtml = `<a class="route-link" href="${url}" target="_blank" rel="noopener">🚗 경로 열기 (차량 이동)</a>`;
   }
 
-  // 상세 일정 카드리스트만 독립 스크롤되도록 분리
+  // 원본 요약 박스 톤 유지 + 카드리스트만 독립 스크롤
   const headerPart = `
     <div class="day-header">
       <h2>${day.title}</h2>
