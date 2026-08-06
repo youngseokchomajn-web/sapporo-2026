@@ -722,9 +722,9 @@ const DAYS = [
     "date": "8/23(일)",
     "isoDate": "2026-08-23",
     "title": "6일차: 모에레누마 & 니조시장 & 시로이코이비토",
-    "summary": "후라노 체크아웃 → 예술공원 자전거 → 니조시장 → 시로이코이비토파크 → 삿포로 숙박",
+    "summary": "후라노 출발 → 예술공원 자전거 → 니조시장 → 시로이코이비토파크 → 후라노 에어비앤비 연박",
     "routeFrom": "Furano Station Hokkaido",
-    "routeTo": "Susukino Station Sapporo",
+    "routeTo": "Moerenuma Park",
     "items": [
       {
         "period": "Morning",
@@ -773,13 +773,13 @@ const DAYS = [
       {
         "period": "Evening",
         "time": "18:30",
-        "icon": "🏨",
-        "title": "삿포로 시내 체크인 & 마지막 밤",
-        "meta": "4.1★ · 차로 이동 · 예상 약 25분",
-        "desc": "스스키노 호텔 체크인 후 스프카레 또는 징기스칸 마지막 저녁식사",
-        "lat": 43.0554,
-        "lng": 141.3533,
-        "q": "삿포로 시내 체크인 & 마지막 밤 43.0554,141.3533"
+        "icon": "🏡",
+        "title": "후라노 에어비앤비 복귀 & 연박",
+        "meta": "4.8★ · 에어비앤비 (후라노 3연박)",
+        "desc": "모에레누마 공원 & 시로이코이비토 관광 후 후라노 에어비앤비 숙소로 복귀하여 편안하게 3연박",
+        "lat": 43.345,
+        "lng": 142.388,
+        "q": "후라노 에어비앤비 복귀 & 연박 43.345,142.388"
       }
     ]
   },
@@ -789,20 +789,20 @@ const DAYS = [
     "date": "8/24(월)",
     "isoDate": "2026-08-24",
     "title": "7일차: 렌터카 반납 & 15:05 귀국",
-    "summary": "삿포로 → 공항 드라이브(1시간) → 렌터카 반납 → 라멘도장 점심 → 출국",
-    "routeFrom": "Susukino Station Sapporo",
+    "summary": "후라노 출발 → 공항 드라이브(2시간) → 렌터카 반납 → 라멘도장 점심 → 출국",
+    "routeFrom": "Furano Station Hokkaido",
     "routeTo": "New Chitose Airport",
     "items": [
       {
         "period": "Morning",
-        "time": "11:30",
+        "time": "10:30",
         "icon": "🚘",
-        "title": "삿포로 출발 → 공항 드라이브",
-        "meta": "차로 이동 · 예상 약 55~60분 (50km)",
-        "desc": "체크아웃 후 짐을 차에 싣고 신치토세 공항 렌터카 반납 지점으로 출발",
-        "lat": 43.0554,
-        "lng": 141.3533,
-        "q": "삿포로 출발 → 공항 드라이브 43.0554,141.3533"
+        "title": "후라노 출발 → 공항 드라이브",
+        "meta": "차로 이동 · 예상 약 2시간 (115km)",
+        "desc": "체크아웃 후 짐을 차에 싣고 신치토세 공항 렌터카 반납 지점으로 출발 (12:30 반납)",
+        "lat": 43.345,
+        "lng": 142.388,
+        "q": "후라노 출발 → 공항 드라이브 43.345,142.388"
       },
       {
         "period": "Afternoon",
@@ -916,7 +916,6 @@ function renderDay(dayId){
     routeHtml = `<a class="route-link" href="${url}" target="_blank" rel="noopener">🚗 경로 열기 (차량 이동)</a>`;
   }
 
-  // 원본 요약 박스 톤 유지 + 카드리스트만 독립 스크롤
   const headerPart = `
     <div class="day-header">
       <h2>${day.title}</h2>
