@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🍜 2026 여름 삿포로 여행</title>
+<title>🍜 2026 삿포로 여름여행</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   :root{
@@ -314,61 +314,49 @@
     .card a.maplink, .card a.tellink{font-size:0.92rem;padding:7px 10px;}
   }
 
-  /* 상단 지도 고정 & 높이 조절 */
   #map {
-    position: sticky;
-    top: 0;
-    height: 40vh;
+    height: 280px;
     width: 100%;
-    z-index: 10;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  }
-
-  /* 하단 바텀시트 컨테이너 (드래그 조절 가능) */
-  #sheetContainer {
-    position: relative;
-    background: var(--bg);
-    border-radius: 20px 20px 0 0;
-    margin-top: -16px;
-    z-index: 20;
-    box-shadow: 0 -6px 20px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* 상단 드래그 바 핸들 */
-  .drag-handle-bar {
-    width: 100%;
-    padding: 12px 0 8px 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: ns-resize;
-    user-select: none;
-    touch-action: none;
-    background: var(--bg);
-    border-radius: 20px 20px 0 0;
-  }
-
-  .drag-handle-bar::after {
-    content: '';
-    width: 48px;
-    height: 5px;
-    background: #cbd5e1;
-    border-radius: 999px;
-    transition: background 0.2s ease;
-  }
-
-  .drag-handle-bar:hover::after, .drag-handle-bar:active::after {
-    background: #94a3b8;
+    border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    margin-bottom: 12px;
   }
 
   #main {
     max-width: 680px;
     margin: 0 auto;
-    padding: 0 16px 40px 16px;
-    width: 100%;
+    padding: 0 16px 20px 16px;
     box-sizing: border-box;
+  }
+
+  .day-header {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  /* 상세 일정 전용 독립 스크롤 컨테이너 */
+  .items-scroll-container {
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 6px;
+    border-radius: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .items-scroll-container::-webkit-scrollbar {
+    width: 6px;
+  }
+  .items-scroll-container::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 999px;
+  }
+  .items-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
   }
 
 </style>
@@ -953,7 +941,8 @@ function renderDay(dayId){
     routeHtml = `<a class="route-link" href="${url}" target="_blank" rel="noopener">🚗 경로 열기 (차량 이동)</a>`;
   }
 
-  let html = `
+  // 상세 일정 카드리스트만 독립 스크롤되도록 분리
+  const headerPart = `
     <div class="day-header">
       <h2>${day.title}</h2>
       <div class="summary">${day.summary}</div>
@@ -961,11 +950,12 @@ function renderDay(dayId){
     </div>
   `;
 
+  let cardsPart = '<div class="items-scroll-container">';
   let lastPeriod = "";
   let cardStopNo = 0;
   day.items.forEach((item, idx) => {
     if(item.period !== lastPeriod){
-      html += `<div class="period-label">${item.period}</div>`;
+      cardsPart += `<div class="period-label">${item.period}</div>`;
       lastPeriod = item.period;
     }
     const link = mapLinkFor(item);
@@ -974,9 +964,9 @@ function renderDay(dayId){
     const cardId = hasPin ? `id="stop-${cardStopNo}"` : "";
     const pinBadge = hasPin ? `<span class="pin-badge">${cardStopNo}</span>` : "";
     if(item.pickNote){
-      html += `<div class="pick-note">${item.pickNote}</div>`;
+      cardsPart += `<div class="pick-note">${item.pickNote}</div>`;
     }
-    html += `
+    cardsPart += `
       <div class="card" ${cardId}>
         <div class="time">${item.time}</div>
         <div class="icon">${item.icon}</div>
@@ -992,8 +982,9 @@ function renderDay(dayId){
       </div>
     `;
   });
+  cardsPart += '</div>';
 
-  document.getElementById('main').innerHTML = html;
+  document.getElementById('main').innerHTML = headerPart + cardsPart;
 }
 
 const tabsEl = document.getElementById('tabs');
@@ -1095,53 +1086,6 @@ async function loadWeather(){
   }
 }
 loadWeather();
-
-  // 상단 지도 높이 드래그 조절 스크립트
-  const mapEl = document.getElementById('map');
-  const dragHandle = document.getElementById('dragHandle');
-  let isDragging = false;
-  let startY = 0;
-  let startHeight = 0;
-
-  function onPointerDown(e) {
-    isDragging = true;
-    startY = e.clientY || (e.touches && e.touches[0].clientY);
-    startHeight = mapEl.clientHeight;
-    document.body.style.cursor = 'ns-resize';
-  }
-
-  function onPointerMove(e) {
-    if (!isDragging) return;
-    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
-    if (!currentY) return;
-    const deltaY = currentY - startY;
-    let newHeight = startHeight + deltaY;
-    const minHeight = window.innerHeight * 0.20; // 최소 20vh
-    const maxHeight = window.innerHeight * 0.70; // 최대 70vh
-    if (newHeight < minHeight) newHeight = minHeight;
-    if (newHeight > maxHeight) newHeight = maxHeight;
-    mapEl.style.height = newHeight + 'px';
-    map.invalidateSize();
-  }
-
-  function onPointerUp() {
-    if (isDragging) {
-      isDragging = false;
-      document.body.style.cursor = '';
-      map.invalidateSize();
-    }
-  }
-
-  if (dragHandle) {
-    dragHandle.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
-
-    dragHandle.addEventListener('touchstart', onPointerDown, { passive: true });
-    window.addEventListener('touchmove', onPointerMove, { passive: true });
-    window.addEventListener('touchend', onPointerUp, { passive: true });
-  }
-
 
 // 여행 기간 중 접속하면 해당 일차 탭을 자동으로 연다
 const TRIP_START = new Date(2026, 7, 18); // 2026-07-27
