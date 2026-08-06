@@ -1052,11 +1052,20 @@ function renderHourlyPanel(dateStr){
 async function loadWeather(){
   const bar = document.getElementById('weatherBar');
   try{
-    const url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
+    // 1차: 지정 일자 요청
+    let url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
       + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
       + "&hourly=temperature_2m,weathercode,precipitation_probability"
       + "&timezone=Asia%2FTokyo&start_date=2026-08-18&end_date=2026-08-24";
-    const res = await fetch(url);
+    let res = await fetch(url);
+    if(!res.ok){
+      // 여행일이 16일 이상 남은 경우 -> 주간 예보로 스마트 스위칭
+      url = "https://api.open-meteo.com/v1/forecast?latitude=43.0642&longitude=141.3469"
+        + "&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+        + "&hourly=temperature_2m,weathercode,precipitation_probability"
+        + "&timezone=Asia%2FTokyo&forecast_days=7";
+      res = await fetch(url);
+    }
     if(!res.ok) throw new Error("weather fetch failed");
     const data = await res.json();
     HOURLY_DATA = data;
@@ -1067,9 +1076,10 @@ async function loadWeather(){
       const hi = Math.round(data.daily.temperature_2m_max[i]);
       const lo = Math.round(data.daily.temperature_2m_min[i]);
       const pop = data.daily.precipitation_probability_max[i];
-      const label = DAYS.find(x => x.date.startsWith(`${d.slice(5,7).replace(/^0/,'')}/${d.slice(8,10).replace(/^0/,'')}`))?.label || d.slice(5);
+      const matchedDay = DAYS.find(x => (x.isoDate && x.isoDate === d) || (x.date && x.date.includes(d.slice(5).replace('-', '/'))));
+      const label = matchedDay ? matchedDay.label : (d.slice(5).replace('-', '/') + ' (실시간)');
       return `<div class="weather-card" data-date="${d}">
-        <div class="wd">${label} (${d.slice(5).replace('-', '/')})</div>
+        <div class="wd">${label}</div>
         <div class="wi">${icon}</div>
         <div class="wt">${hi}° <span class="lo">${lo}°</span></div>
         <div class="wp">☔ ${pop}%</div>
@@ -1079,7 +1089,7 @@ async function loadWeather(){
       card.addEventListener('click', () => renderHourlyPanel(card.dataset.date));
     });
   }catch(e){
-    bar.innerHTML = `<div class="weather-card"><div class="wd">삿포로 날씨</div><div class="wi">🌡️</div><div class="wt" style="font-size:0.72rem;color:var(--sub)">예보 준비 전<br>(출발 16일 전부터 제공)</div></div>`;
+    bar.innerHTML = `<div class="weather-card"><div class="wd">삿포로 날씨</div><div class="wi">🌡️</div><div class="wt" style="font-size:0.72rem;color:var(--sub)">실시간 예보 로딩중</div></div>`;
   }
 }
 loadWeather();
