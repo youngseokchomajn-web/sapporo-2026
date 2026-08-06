@@ -313,6 +313,64 @@
     .card .links{gap:8px;}
     .card a.maplink, .card a.tellink{font-size:0.92rem;padding:7px 10px;}
   }
+
+  /* 상단 지도 고정 & 높이 조절 */
+  #map {
+    position: sticky;
+    top: 0;
+    height: 40vh;
+    width: 100%;
+    z-index: 10;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  }
+
+  /* 하단 바텀시트 컨테이너 (드래그 조절 가능) */
+  #sheetContainer {
+    position: relative;
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+    margin-top: -16px;
+    z-index: 20;
+    box-shadow: 0 -6px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 상단 드래그 바 핸들 */
+  .drag-handle-bar {
+    width: 100%;
+    padding: 12px 0 8px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: ns-resize;
+    user-select: none;
+    touch-action: none;
+    background: var(--bg);
+    border-radius: 20px 20px 0 0;
+  }
+
+  .drag-handle-bar::after {
+    content: '';
+    width: 48px;
+    height: 5px;
+    background: #cbd5e1;
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+
+  .drag-handle-bar:hover::after, .drag-handle-bar:active::after {
+    background: #94a3b8;
+  }
+
+  #main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 0 16px 40px 16px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
 </style>
 </head>
 <body>
@@ -1037,6 +1095,53 @@ async function loadWeather(){
   }
 }
 loadWeather();
+
+  // 상단 지도 높이 드래그 조절 스크립트
+  const mapEl = document.getElementById('map');
+  const dragHandle = document.getElementById('dragHandle');
+  let isDragging = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  function onPointerDown(e) {
+    isDragging = true;
+    startY = e.clientY || (e.touches && e.touches[0].clientY);
+    startHeight = mapEl.clientHeight;
+    document.body.style.cursor = 'ns-resize';
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const currentY = e.clientY || (e.touches && e.touches[0].clientY);
+    if (!currentY) return;
+    const deltaY = currentY - startY;
+    let newHeight = startHeight + deltaY;
+    const minHeight = window.innerHeight * 0.20; // 최소 20vh
+    const maxHeight = window.innerHeight * 0.70; // 최대 70vh
+    if (newHeight < minHeight) newHeight = minHeight;
+    if (newHeight > maxHeight) newHeight = maxHeight;
+    mapEl.style.height = newHeight + 'px';
+    map.invalidateSize();
+  }
+
+  function onPointerUp() {
+    if (isDragging) {
+      isDragging = false;
+      document.body.style.cursor = '';
+      map.invalidateSize();
+    }
+  }
+
+  if (dragHandle) {
+    dragHandle.addEventListener('mousedown', onPointerDown);
+    window.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
+
+    dragHandle.addEventListener('touchstart', onPointerDown, { passive: true });
+    window.addEventListener('touchmove', onPointerMove, { passive: true });
+    window.addEventListener('touchend', onPointerUp, { passive: true });
+  }
+
 
 // 여행 기간 중 접속하면 해당 일차 탭을 자동으로 연다
 const TRIP_START = new Date(2026, 7, 18); // 2026-07-27
