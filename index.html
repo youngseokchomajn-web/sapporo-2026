@@ -334,6 +334,69 @@
     background: transparent;
   }
 
+
+  .tab.special-tab{
+    background: linear-gradient(135deg, #24344d, #1a2538);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .tab.special-tab.active{
+    background: var(--accent);
+    color: #0b1020;
+    font-weight: 800;
+  }
+  .info-detail-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 14px;
+  }
+  .info-detail-card h3{
+    margin: 0 0 12px;
+    font-size: 1.15rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .info-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .info-cell{
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+  }
+  .info-cell .label{
+    font-size: 0.76rem;
+    color: var(--sub);
+    margin-bottom: 4px;
+  }
+  .info-cell .val{
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .info-cell .val.highlight{
+    color: var(--accent2);
+    font-size: 1.05rem;
+  }
+  .info-guide-box{
+    background: rgba(94, 177, 255, 0.08);
+    border: 1px solid rgba(94, 177, 255, 0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .info-guide-box b{ color: var(--accent); }
+
 </style>
 </head>
 <body>
@@ -342,12 +405,7 @@
   <h1>👩‍❤️‍👨 2026 삿포로 여름 로맨틱 로드트립</h1>
   <p>2026.08.18(화) – 08.24(월) · 6박 7일 · 둘만의 홋카이도 드라이브 여행</p>
 </header>
-<div class="logibar">
-  <div class="logi-chip">🚗 <b>오릭스 렌터카</b> 【금연】노트 e-POWER 지정 (4WD)</div>
-  <div class="logi-chip">📋 예약번호: <b>101849333</b> (PW: <b>d6ab2d50</b>)</div>
-  <div class="logi-chip">📍 신치토세공항점 <b>0123-22-0543</b> · 맵코드 <b>86 788 111</b></div>
-  <div class="logi-chip">💳 현지결제: <b>51,176엔</b> (ETC카드 포함) · 8/18 14:30 ~ 8/24 12:30</div>
-</div>
+
 
 
 <div class="weather-bar" id="weatherBar">
@@ -873,6 +931,186 @@ function clearMarkers(){
   if(routeLine){ map.removeLayer(routeLine); routeLine = null; }
 }
 
+
+function renderRentalCarTab(){
+  clearMarkers();
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.remove('active');
+    t.classList.toggle('active', t.dataset.type === 'car');
+  });
+
+  const carLat = 42.8166827, carLng = 141.6790449;
+  const icon = L.divIcon({
+    className: '',
+    html: '<div class="num-pin" style="background:#ffb454;"><span>🚗</span></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+  });
+  const marker = L.marker([carLat, carLng], { icon }).addTo(map);
+  marker.bindPopup('<b>오릭스 렌터카 신치토세공항점</b><br>TEL: 0123-22-0543<br>맵코드: 86 788 111').openPopup();
+  markers.push(marker);
+  map.setView([carLat, carLng], 14);
+
+  const content = `
+    <div class="day-header">
+      <h2>🚗 오릭스 렌터카 예약 확정 정보</h2>
+      <div class="summary">신치토세 공항점 픽업 & 반납 · 142시간 (6박 7일 풀 대여)</div>
+      <a class="route-link" href="https://www.google.com/maps/search/?api=1&query=${carLat},${carLng}" target="_blank" rel="noopener">📍 영업소 구글맵 열기</a>
+      <a class="route-link" href="tel:0123220543" style="margin-left:8px;border-color:var(--accent2);color:var(--accent2);">☎ 0123-22-0543 전화</a>
+    </div>
+
+    <div class="info-detail-card">
+      <h3>📋 예약 번호 및 기본 정보</h3>
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="label">예약 번호</div>
+          <div class="val highlight">101849333</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">예약 비밀번호</div>
+          <div class="val highlight">d6ab2d50</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">예약자 / 인원</div>
+          <div class="val">조영석 (성인 2명)</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">현지 결제 총액</div>
+          <div class="val highlight">51,176 엔 (세금/ETC포함)</div>
+        </div>
+      </div>
+
+      <h3>🚙 차량 및 옵션 정보</h3>
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="label">확정 차종</div>
+          <div class="val">【금연】 닛산 노트 e-POWER 지정</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">구동 방식 / 클래스</div>
+          <div class="val">4WD (사륜구동) / EA 클래스</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">기본 장비</div>
+          <div class="val">백모니터, 블랙박스, 카내비게이션</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">유료 옵션</div>
+          <div class="val">ETC 카드 대여 (550엔 포함)</div>
+        </div>
+      </div>
+
+      <h3>⏰ 대여 & 반납 일정</h3>
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="label">픽업 일시</div>
+          <div class="val">2026.08.18 (화) 14:30</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">반납 일시</div>
+          <div class="val">2026.08.24 (월) 12:30</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">내비 맵코드 (MapCode)</div>
+          <div class="val highlight">86 788 111</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">영업소 주소</div>
+          <div class="val">北海道千歳市美々758-185</div>
+        </div>
+      </div>
+
+      <div class="info-guide-box">
+        <b>💡 공항 셔틀 탑승 안내</b><br>
+        1. 신치토세 공항 도착 후 <b>1층 렌터카 카운터</b>로 이동하여 오릭스 렌터카 접수.<br>
+        2. 직원이 배부해 주는 번호표를 받고 <b>전용 무료 셔틀버스(약 7~10분)</b>에 탑승하여 영업소로 이동.<br>
+        3. 영업소에서 면허증 확인 및 51,176엔 결제 후 차량 인수 출발!
+      </div>
+    </div>
+  `;
+  document.getElementById('main').innerHTML = content;
+}
+
+function renderFlightTab(){
+  clearMarkers();
+  document.querySelectorAll('.tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.type === 'flight');
+  });
+
+  const airportLat = 42.7863, airportLng = 141.6814;
+  const icon = L.divIcon({
+    className: '',
+    html: '<div class="num-pin" style="background:#5eb1ff;"><span>✈️</span></div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 30],
+    popupAnchor: [0, -30]
+  });
+  const marker = L.marker([airportLat, airportLng], { icon }).addTo(map);
+  marker.bindPopup('<b>신치토세 국제공항 (CTS)</b><br>3F 국제선 터미널').openPopup();
+  markers.push(marker);
+  map.setView([airportLat, airportLng], 12);
+
+  const content = `
+    <div class="day-header">
+      <h2>✈️ 출국 & 귀국 항공권 정보</h2>
+      <div class="summary">인천(ICN) ↔ 신치토세(CTS) · 6박 7일 로맨틱 로드트립</div>
+      <a class="route-link" href="https://www.google.com/maps/search/?api=1&query=${airportLat},${airportLng}" target="_blank" rel="noopener">📍 신치토세 공항 구글맵 열기</a>
+    </div>
+
+    <div class="info-detail-card">
+      <h3>🛫 [가는 편] 1일차 2026.08.18 (화)</h3>
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="label">출발 공항 ➔ 도착 공항</div>
+          <div class="val highlight">인천 (ICN) ➔ 신치토세 (CTS)</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">신치토세 도착 시각</div>
+          <div class="val highlight">13:45 도착</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">도착 후 동선</div>
+          <div class="val">14:15 수하물 수령 ➔ 14:30 렌터카 픽업</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">첫날 목적지</div>
+          <div class="val">스스키노 숙소 체크인 (15:30)</div>
+        </div>
+      </div>
+
+      <h3>🛬 [오는 편] 7일차 2026.08.24 (월)</h3>
+      <div class="info-grid">
+        <div class="info-cell">
+          <div class="label">출발 공항 ➔ 도착 공항</div>
+          <div class="val highlight">신치토세 (CTS) ➔ 인천 (ICN)</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">신치토세 출발 시각</div>
+          <div class="val highlight">15:05 출발 (이륙)</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">렌터카 반납 시간</div>
+          <div class="val highlight">12:30 반납 완료</div>
+        </div>
+        <div class="info-cell">
+          <div class="label">공항 점심 & 쇼핑</div>
+          <div class="val">13:00~14:15 라멘도장 & 면세점</div>
+        </div>
+      </div>
+
+      <div class="info-guide-box">
+        <b>🎒 일본 입국 필수 준비물 체크리스트</b><br>
+        • <b>여권</b> (유효기간 6개월 이상 권장)<br>
+        • <b>국제운전면허증 + 국내운전면허증 + 여권 실물</b> (렌터카 필수 지참)<br>
+        • <b>Visit Japan Web</b> (입국 전 사전 큐알코드 등록)<br>
+        • <b>현금(엔화) & 해외결제 신용카드/트래블카드</b>
+      </div>
+    </div>
+  `;
+  document.getElementById('main').innerHTML = content;
+}
+
 function mapLinkFor(item){
   if(item.mapUrl) return item.mapUrl;
   if(item.q) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.q)}`;
@@ -979,15 +1217,38 @@ function renderDay(dayId){
   document.getElementById('main').innerHTML = headerPart + cardsPart;
 }
 
+
 const tabsEl = document.getElementById('tabs');
+
+// 1) 🚗 렌터카 정보 탭
+const carTab = document.createElement('div');
+carTab.className = 'tab special-tab';
+carTab.dataset.type = 'car';
+carTab.textContent = '🚗 렌터카 정보';
+carTab.addEventListener('click', renderRentalCarTab);
+tabsEl.appendChild(carTab);
+
+// 2) ✈️ 항공권 정보 탭
+const flightTab = document.createElement('div');
+flightTab.className = 'tab special-tab';
+flightTab.dataset.type = 'flight';
+flightTab.textContent = '✈️ 항공권 정보';
+flightTab.addEventListener('click', renderFlightTab);
+tabsEl.appendChild(flightTab);
+
+// 3) 1~7일차 탭
 DAYS.forEach(day => {
   const btn = document.createElement('div');
   btn.className = 'tab';
   btn.dataset.id = day.id;
   btn.textContent = `${day.label} ${day.date}`;
-  btn.addEventListener('click', () => renderDay(day.id));
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    renderDay(day.id);
+  });
   tabsEl.appendChild(btn);
 });
+
 
 const WEATHER_CODES = {
   0:["☀️","맑음"], 1:["🌤️","대체로 맑음"], 2:["⛅","구름 조금"], 3:["☁️","흐림"],
