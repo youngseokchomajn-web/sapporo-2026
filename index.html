@@ -438,9 +438,9 @@ const DAYS = [
         "period": "Afternoon",
         "time": "13:45",
         "icon": "🛫",
-        "title": "신치토세 공항 도착",
-        "meta": "착륙 & 입국심사·수하물 수령",
-        "desc": "신치토세 공항 도착 후 1층 렌터카 전용 카운터로 이동",
+        "title": "신치토세 공항 도착 (파라타항공 WE 531)",
+        "meta": "인천 11:00 ➔ 신치토세 13:45 · 무료수하물 15kg",
+        "desc": "입국심사 & 수하물 수령 후 1층 렌터카 카운터로 이동하여 오릭스 셔틀 탑승",
         "lat": 42.7863,
         "lng": 141.6814,
         "q": "신치토세 공항 도착 42.7863,141.6814"
@@ -906,9 +906,9 @@ const DAYS = [
         "period": "Afternoon",
         "time": "15:05",
         "icon": "🛫",
-        "title": "신치토세 공항 귀국",
-        "meta": "귀국편 · 탑승 게이트 이동",
-        "desc": "출국 수속 후 비행기 탑승 및 귀국",
+        "title": "신치토세 공항 출국 귀국 (파라타항공 WE 532)",
+        "meta": "신치토세 15:05 ➔ 인천 18:10 · 무료수하물 15kg",
+        "desc": "출국 심사 & 면세점 쇼핑 후 파라타항공 WE 532편 탑승 및 인천 귀국 (18:10 도착)",
         "lat": 42.7863,
         "lng": 141.6814,
         "q": "신치토세 공항 귀국 42.7863,141.6814"
@@ -1047,64 +1047,75 @@ function renderFlightTab(){
     popupAnchor: [0, -30]
   });
   const marker = L.marker([airportLat, airportLng], { icon }).addTo(map);
-  marker.bindPopup('<b>신치토세 국제공항 (CTS)</b><br>3F 국제선 터미널').openPopup();
+  marker.bindPopup('<b>신치토세 국제공항 (CTS)</b><br>파라타항공 WE 531 / WE 532').openPopup();
   markers.push(marker);
   map.setView([airportLat, airportLng], 12);
 
   const content = `
     <div class="day-header">
-      <h2>✈️ 출국 & 귀국 항공권 정보</h2>
-      <div class="summary">인천(ICN) ↔ 신치토세(CTS) · 6박 7일 로맨틱 로드트립</div>
+      <h2>✈️ 파라타 항공 (PARATA AIR) e-티켓 정보</h2>
+      <div class="summary">인천(ICN) ↔ 신치토세(CTS) · WE 531 / WE 532 직항 · 1인당 무료수하물 15kg</div>
       <a class="route-link" href="https://www.google.com/maps/search/?api=1&query=${airportLat},${airportLng}" target="_blank" rel="noopener">📍 신치토세 공항 구글맵 열기</a>
     </div>
 
     <div class="info-detail-card">
-      <h3>🛫 [가는 편] 1일차 2026.08.18 (화)</h3>
+      <h3>🛫 [가는 편] 1일차 2026.08.18 (화) — WE 531</h3>
       <div class="info-grid">
         <div class="info-cell">
-          <div class="label">출발 공항 ➔ 도착 공항</div>
-          <div class="val highlight">인천 (ICN) ➔ 신치토세 (CTS)</div>
+          <div class="label">항공사 / 편명</div>
+          <div class="val highlight">파라타 항공 (WE 531)</div>
         </div>
         <div class="info-cell">
-          <div class="label">신치토세 도착 시각</div>
-          <div class="val highlight">13:45 도착</div>
+          <div class="label">인천 출발 (ICN)</div>
+          <div class="val highlight">11:00 출발 (제1터미널)</div>
         </div>
         <div class="info-cell">
-          <div class="label">도착 후 동선</div>
-          <div class="val">14:15 수하물 수령 ➔ 14:30 렌터카 픽업</div>
+          <div class="label">신치토세 도착 (CTS)</div>
+          <div class="val highlight">13:45 도착 (국제선)</div>
         </div>
         <div class="info-cell">
-          <div class="label">첫날 목적지</div>
-          <div class="val">스스키노 숙소 체크인 (15:30)</div>
+          <div class="label">무료 위탁 수하물</div>
+          <div class="val">1인당 15kg (15K)</div>
         </div>
       </div>
 
-      <h3>🛬 [오는 편] 7일차 2026.08.24 (월)</h3>
+      <div class="info-guide-box" style="margin-bottom:18px;">
+        <b>⏰ 1일차 입국 & 렌터카 수령 타임라인</b><br>
+        • <b>08:30</b>: 인천공항 도착, 탑승수속 및 위탁수하물(15kg) 위탁<br>
+        • <b>11:00</b>: 인천공항 이륙 (비행 약 2시간 45분)<br>
+        • <b>13:45</b>: 신치토세 공항 국제선 터미널 착륙<br>
+        • <b>14:15</b>: 입국심사(Visit Japan QR) 및 수하물 수령 완료<br>
+        • <b>14:30</b>: 1층 렌터카 카운터 접수 후 오릭스 셔틀 탑승 ➔ <b>노트 e-POWER 픽업!</b>
+      </div>
+
+      <h3>🛬 [오는 편] 7일차 2026.08.24 (월) — WE 532</h3>
       <div class="info-grid">
         <div class="info-cell">
-          <div class="label">출발 공항 ➔ 도착 공항</div>
-          <div class="val highlight">신치토세 (CTS) ➔ 인천 (ICN)</div>
+          <div class="label">항공사 / 편명</div>
+          <div class="val highlight">파라타 항공 (WE 532)</div>
         </div>
         <div class="info-cell">
-          <div class="label">신치토세 출발 시각</div>
-          <div class="val highlight">15:05 출발 (이륙)</div>
+          <div class="label">신치토세 출발 (CTS)</div>
+          <div class="val highlight">15:05 출발 (국제선)</div>
         </div>
         <div class="info-cell">
-          <div class="label">렌터카 반납 시간</div>
-          <div class="val highlight">12:30 반납 완료</div>
+          <div class="label">인천 도착 (ICN)</div>
+          <div class="val highlight">18:10 도착</div>
         </div>
         <div class="info-cell">
-          <div class="label">공항 점심 & 쇼핑</div>
-          <div class="val">13:00~14:15 라멘도장 & 면세점</div>
+          <div class="label">무료 위탁 수하물</div>
+          <div class="val">1인당 15kg (15K)</div>
         </div>
       </div>
 
       <div class="info-guide-box">
-        <b>🎒 일본 입국 필수 준비물 체크리스트</b><br>
-        • <b>여권</b> (유효기간 6개월 이상 권장)<br>
-        • <b>국제운전면허증 + 국내운전면허증 + 여권 실물</b> (렌터카 필수 지참)<br>
-        • <b>Visit Japan Web</b> (입국 전 사전 큐알코드 등록)<br>
-        • <b>현금(엔화) & 해외결제 신용카드/트래블카드</b>
+        <b>⏰ 7일차 렌터카 반납 & 출국 타임라인</b><br>
+        • <b>12:30</b>: 오릭스 렌터카 신치토세공항점 차량 반납 완료<br>
+        • <b>12:45</b>: 무료 셔틀 타고 공항 3층 국제선 터미널 도착<br>
+        • <b>13:00~13:45</b>: 공항 3층 홋카이도 라멘도장 점심식사 🍜<br>
+        • <b>13:50</b>: 파라타항공 체크인 및 수하물(15kg) 위탁, 보안검색 통과<br>
+        • <b>14:20~14:50</b>: 출국장 면세점 쇼핑 (로이스 초콜릿, 시로이코이비토 등)<br>
+        • <b>15:05</b>: WE 532 탑승 및 귀국 (인천 18:10 도착)
       </div>
     </div>
   `;
